@@ -1,0 +1,21 @@
+{
+  "name": "rundit-sdk-tooling",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Code generation, compatibility checking, and publishing for the Rundit SDK packages (@rundit-sdk/client, @rundit-sdk/embed). The API contract arrives as spec/sdk.openapi.json, committed by rundit-back.",
+  "license": "MIT",
+  "scripts": {
+    "sdk:generate": "node scripts/generate-sdk.cjs",
+    "sdk:clean": "node -e \"require('fs').rmSync('packages',{recursive:true,force:true})\"",
+    "sdk:classify-bump": "node scripts/classify-bump.cjs",
+    "sdk:version:bump": "node scripts/bump-version.cjs",
+    "sdk:check-compatibility": "node scripts/check-compatibility.cjs",
+    "sdk:detect-drift": "node scripts/detect-drift.cjs",
+    "sdk:check-surface": "node scripts/check-sdk-surface.cjs",
+    "sdk:check-wire-contract": "node --test wire-test.mjs",
+    "sdk:publish": "node scripts/publish-packages.cjs"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
