@@ -164,9 +164,13 @@ function createPackageJson(packageConfig, version) {
     name: packageConfig.packageName,
     version,
     description: packageConfig.description,
+    // Must point at the repo that publishes these packages (rundit-sdk), not where the
+    // API lives (rundit-back) — npm provenance validates repository.url against the
+    // building repo and rejects a mismatch (422). git+https is npm's normalized form.
     repository: {
       type: 'git',
-      url: 'https://github.com/Rundit/rundit-back.git',
+      url: 'git+https://github.com/Rundit/rundit-sdk.git',
+      directory: `packages/${packageConfig.packageDir}`,
     },
     type: 'module',
     sideEffects: false,

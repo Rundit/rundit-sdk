@@ -3,7 +3,7 @@
   "paths": {
     "/api/v2/sdk/companies/dashboards": {
       "post": {
-        "description": "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` to scope the returned metrics, `metricsTimeframe` to restrict data point granularity, `currency` (ISO 4217) to FX-convert monetary metrics across the batch, and `transactionLimit` / `reportLimit` to cap list sizes per company.",
+        "description": "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively).",
         "operationId": "companies.getDashboards",
         "parameters": [],
         "requestBody": {
@@ -141,6 +141,7 @@
     },
     "/api/v2/sdk/companies/{id}": {
       "get": {
+        "description": "Returns the full company object for a single company. Includes all compact-list fields (id, name, type, currency, website, logo) plus extended metadata: legal name, status, description, vision, address, city, state, country, operating countries, VAT number, founding year, established date, total funding, and accessible fund ids (as `companyGroupIds`). Returns 404 if the company does not exist or is inaccessible to the caller.",
         "operationId": "companies.getOne",
         "parameters": [
           {
@@ -285,7 +286,7 @@
     },
     "/api/v2/sdk/company-groups": {
       "get": {
-        "description": "Returns compact company group metadata (id, name, demo flag, color, member company ids). Filter by `companyGroupIds` and/or `nameSearch` (case-insensitive substring on name; accepts an array to resolve multiple groups in one call with OR semantics — e.g. `nameSearch=[\"fund i\",\"fund ii\"]`).",
+        "description": "Returns compact fund metadata (id, name, demo flag, color, member company ids). Filter by `companyGroupIds` and/or `nameSearch` (case-insensitive substring on name; accepts an array to resolve multiple groups in one call with OR semantics — e.g. `nameSearch=[\"fund i\",\"fund ii\"]`).",
         "operationId": "companyGroups.getAll",
         "parameters": [
           {
@@ -354,7 +355,7 @@
             "sdk-client-api-key": []
           }
         ],
-        "summary": "List company groups available to the SDK consumer",
+        "summary": "List funds available to the SDK consumer",
         "tags": [
           "sdk-company-groups"
         ],
@@ -368,6 +369,7 @@
     },
     "/api/v2/sdk/company-groups/{id}": {
       "get": {
+        "description": "Returns full fund details. Includes all compact-list fields (id, name, type, currency, logo) plus extended fund metadata: legal name, domicile, management company, GP, vintage year, fund currency, opening and closing dates, legal form, investment policy, fees, regulatory info, and service providers. Also includes the list of member companies the caller can access. Returns 404 if the fund does not exist or is inaccessible to the caller.",
         "operationId": "companyGroups.getOne",
         "parameters": [
           {
@@ -403,7 +405,7 @@
             "sdk-client-api-key": []
           }
         ],
-        "summary": "Get one company group available to the SDK consumer",
+        "summary": "Get one fund available to the SDK consumer",
         "tags": [
           "sdk-company-groups"
         ],
@@ -530,6 +532,7 @@
     },
     "/api/v2/sdk/positions/companies/{id}": {
       "get": {
+        "description": "Returns all fund-level positions for a single company — one entry per fund (`companyGroupId`) that holds a position in the company. Each entry carries invested amount, fair market value, ownership percentage, share counts, multiple, and ROI, all FX-converted to `currency` (ISO 4217, required). Filter by `companyGroupIds` to scope to specific funds. Use `date` (ISO 8601) for a historical snapshot; omit to use the latest available data.",
         "operationId": "positions.getCompanyPositions",
         "parameters": [
           {
@@ -627,6 +630,7 @@
     },
     "/api/v2/sdk/positions/portfolio": {
       "get": {
+        "description": "Returns a single aggregated position object that sums invested amount, fair market value, ownership percentage, share counts, multiple, and ROI across all accessible companies (optionally filtered by `companyIds` and/or `companyGroupIds` to scope to specific funds). `currency` (ISO 4217, required) converts all monetary values. Use `date` (ISO 8601) for a historical snapshot; omit for the latest available data. For a per-company breakdown instead of a single aggregate, use `GET /positions/portfolio/summary`.",
         "operationId": "positions.getPortfolioPositions",
         "parameters": [
           {
@@ -695,7 +699,7 @@
             "sdk-client-api-key": []
           }
         ],
-        "summary": "Get portfolio positions",
+        "summary": "Get aggregated portfolio position totals",
         "tags": [
           "sdk-positions"
         ],
@@ -709,7 +713,7 @@
     },
     "/api/v2/sdk/transactions/summary": {
       "get": {
-        "description": "Returns aggregated transaction statistics: total invested, total realized, transaction count, company count, and breakdown by transaction type. Optionally group by period (Month, Quarter, Year). Filter by company, company group, and date range.",
+        "description": "Returns aggregated transaction statistics: total invested, total realized, transaction count, company count, and breakdown by transaction type. Optionally group by period (Month, Quarter, Year). Filter by company, fund (`companyGroupIds`), and date range.",
         "operationId": "transactions.getSummary",
         "parameters": [
           {
@@ -833,6 +837,7 @@
     },
     "/api/v2/sdk/transactions/companies/{id}": {
       "get": {
+        "description": "Returns all transactions for a single company, ordered by date descending. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyGroupIds` to scope to a specific fund, `types` to limit to specific transaction kinds, and `priorTo` (ISO 8601) for a historical snapshot. Requires transaction read access on the company.",
         "operationId": "transactions.getCompanyTransactions",
         "parameters": [
           {
@@ -955,6 +960,7 @@
     },
     "/api/v2/sdk/transactions": {
       "get": {
+        "description": "Returns transactions across multiple companies. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyIds`, `companyGroupIds`, `types`, and `priorTo` (ISO 8601 upper-bound date for a historical snapshot). When `companyIds` is provided, the caller must have transaction read access on every listed company.",
         "operationId": "transactions.getTransactions",
         "parameters": [
           {
@@ -1220,7 +1226,7 @@
     },
     "/api/v2/sdk/metrics/aggregate": {
       "post": {
-        "description": "Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by company group for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation.",
+        "description": "Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation.",
         "operationId": "metrics.aggregate",
         "parameters": [],
         "requestBody": {
@@ -1270,7 +1276,7 @@
     },
     "/api/v2/sdk/company-reports": {
       "get": {
-        "description": "Returns lightweight report metadata (id, title, period, publisher company reference). Use GET /company-reports/:id to fetch the full content of a specific report. Visibility is determined by the caller's roles — VC users see reports for managed-portfolio companies, company employees see their own company's reports, portfolio investors see Published reports shared with their visibility groups. Filters narrow the list by company ids, company groups, company name substring (`companyNameSearch`), and reporting period (timeframe + date range).",
+        "description": "Returns lightweight report metadata (id, title, period, publisher company reference). Use GET /company-reports/:id to fetch the full content of a specific report. Visibility is determined by the caller's roles — VC users see reports for managed-portfolio companies, company employees see their own company's reports, portfolio investors see Published reports shared with their visibility groups. Filters narrow the list by company ids, funds (`companyGroupIds`), company name substring (`companyNameSearch`), and reporting period (timeframe + date range).",
         "operationId": "companyReports.list",
         "parameters": [
           {

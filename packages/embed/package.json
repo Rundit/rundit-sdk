@@ -4,7 +4,8 @@
   "description": "Public Rundit embed SDK for iframe and embedded module consumers.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Rundit/rundit-sdk"
+    "url": "git+https://github.com/Rundit/rundit-sdk.git",
+    "directory": "packages/embed"
   },
   "type": "module",
   "sideEffects": false,

@@ -4,7 +4,8 @@
   "description": "Rundit client SDK for third-party integrations authenticated with a Rundit API key.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Rundit/rundit-sdk"
+    "url": "git+https://github.com/Rundit/rundit-sdk.git",
+    "directory": "packages/client"
   },
   "type": "module",
   "sideEffects": false,

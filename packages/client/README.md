@@ -85,7 +85,7 @@ List companies available to the SDK consumer
 
 ### `companyGroups.getAll`
 
-List company groups available to the SDK consumer
+List funds available to the SDK consumer
 
 - Call: `client.companyGroups.getAll({ limit: 123 })`
 - HTTP: `GET /company-groups`
@@ -94,7 +94,7 @@ List company groups available to the SDK consumer
 
 ### `companyGroups.getOne`
 
-Get one company group available to the SDK consumer
+Get one fund available to the SDK consumer
 
 - Call: `client.companyGroups.getOne(123)`
 - HTTP: `GET /company-groups/:id`
@@ -123,7 +123,7 @@ Get positions for one company
 
 ### `positions.getPortfolioPositions`
 
-Get portfolio positions
+Get aggregated portfolio position totals
 
 - Call: `client.positions.getPortfolioPositions({ currency: 'USD' })`
 - HTTP: `GET /positions/portfolio`
