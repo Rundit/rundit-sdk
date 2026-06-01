@@ -46,11 +46,11 @@ console.log(routeManifest)
 
 ## companyGroups
 
-- companyGroups.getAll: List company groups available to the SDK consumer
+- companyGroups.getAll: List funds available to the SDK consumer
   - Call: `client.companyGroups.getAll({ limit: 123 })`
   - Returns: `CompanyGroupsGetAllResponse`
   - Params: query: limit? (number), cursor? (string), companyGroupIds? (number[]), nameSearch? (string[])
-- companyGroups.getOne: Get one company group available to the SDK consumer
+- companyGroups.getOne: Get one fund available to the SDK consumer
   - Call: `client.companyGroups.getOne(123)`
   - Returns: `CompanyGroupsGetOneResponse`
   - Params: path: id (number)
@@ -65,7 +65,7 @@ console.log(routeManifest)
   - Call: `client.positions.getCompanyPositions(123, { currency: 'USD' })`
   - Returns: `PositionsGetCompanyPositionsResponse`
   - Params: path: id (number); query: limit? (number), cursor? (string), companyGroupIds? (number[]), currency (string), date? (string)
-- positions.getPortfolioPositions: Get portfolio positions
+- positions.getPortfolioPositions: Get aggregated portfolio position totals
   - Call: `client.positions.getPortfolioPositions({ currency: 'USD' })`
   - Returns: `PositionsGetPortfolioPositionsResponse`
   - Params: query: companyGroupIds? (number[]), companyIds? (number[]), currency (string), date? (string)
