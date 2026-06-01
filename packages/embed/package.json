@@ -1,0 +1,30 @@
+{
+  "name": "@rundit-sdk/embed",
+  "version": "0.2.0",
+  "description": "Public Rundit embed SDK for iframe and embedded module consumers.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Rundit/rundit-back.git"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "AGENTS.md",
+    "ai-manifest.json",
+    "openapi.json",
+    "skills"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}

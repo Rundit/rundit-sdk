@@ -87,6 +87,15 @@ spec bundled in the package **currently published at the target dist-tag** (auth
 classification falls out. The breaking gate still runs and still respects an explicit
 "allow breaking" escape hatch for intentional majors.
 
+**Pre-1.0 cap.** While a package's stable major is `0`, a `major` classification is
+published as a `minor` bump — there are no stability guarantees pre-1.0, so e.g. the
+`/api/v1/` → `/api/v2/` cut lands as `0.2.0` → `0.3.0`, not `1.0.0`. The cap lifts
+automatically once a package reaches `1.0.0`; set `SDK_ALLOW_MAJOR=true` to cut a real
+major. Note this only affects the *version number* — a change that is breaking versus a
+channel's published spec still trips the breaking gate, so the first `production` cut to
+v2 must be a dispatched run with `allow_breaking=true` (safe here: no external consumers
+on `latest` yet).
+
 For `rc`: the prerelease version is `bump(lastStable, type)-rc.<run_number>` (same scheme
 as before, but `type` is now computed). For `latest`: `versions.json` is bumped by `type`
 and committed back.

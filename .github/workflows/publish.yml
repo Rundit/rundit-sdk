@@ -1,0 +1,143 @@
+name: Publish SDK Packages
+
+# The API contract (spec/sdk.openapi.json) is committed here by rundit-back. A change
+# to it on develop/production drives generation, checking, and publishing.
+#   develop    -> dist-tag rc       (preview of the next stable)
+#   production -> dist-tag latest   (stable release)
+on:
+  push:
+    branches: [develop, production]
+    paths: ['spec/sdk.openapi.json']
+  workflow_dispatch:
+    inputs:
+      allow_breaking:
+        description: Allow breaking changes vs the channel's published spec (intentional major cut, e.g. v1 -> v2)
+        type: boolean
+        default: false
+      force_publish:
+        description: Publish even if the generated surface already matches the channel's dist-tag
+        type: boolean
+        default: false
+
+concurrency:
+  group: sdk-publish-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-sdk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit regenerated packages + versions.json on release
+      id-token: write # npm provenance via OIDC trusted publishing
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      # Trusted publishing (tokenless, OIDC) needs npm >= 11.5.1; Node 24 ships an
+      # older npm. No NODE_AUTH_TOKEN is set — provenance + auth come from OIDC.
+      - run: npm install -g npm@latest
+
+      - run: npm ci
+
+      - name: Resolve channel
+        id: channel
+        shell: bash
+        run: |
+          if [[ "${{ github.ref_name }}" == 'production' ]]; then
+            echo 'channel=release' >> "$GITHUB_OUTPUT"
+            echo 'dist_tag=latest' >> "$GITHUB_OUTPUT"
+          else
+            echo 'channel=rc' >> "$GITHUB_OUTPUT"
+            echo 'dist_tag=rc' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate SDK from committed spec
+        run: npm run sdk:generate
+
+      - name: Decide whether to publish
+        id: drift
+        shell: bash
+        run: |
+          # Publish only when the generated surface differs from what's already on the
+          # channel's dist-tag (or when forced). detect-drift prints true/false.
+          if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.force_publish }}" == 'true' ]]; then
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+            echo 'force_publish requested.'
+            exit 0
+          fi
+          DRIFT="$(node scripts/detect-drift.cjs ${{ steps.channel.outputs.dist_tag }})"
+          if [[ "$DRIFT" == 'true' ]]; then
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+            echo "Surface differs from @${{ steps.channel.outputs.dist_tag }}; publishing."
+          else
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            echo "Surface matches @${{ steps.channel.outputs.dist_tag }}; nothing to publish."
+          fi
+
+      - name: Check SDK surface for internal leaks
+        if: steps.drift.outputs.publish == 'true'
+        run: npm run sdk:check-surface
+
+      - name: Check runtime wire contract
+        if: steps.drift.outputs.publish == 'true'
+        run: npm run sdk:check-wire-contract
+
+      - name: Breaking-change gate (vs this channel's published spec)
+        if: steps.drift.outputs.publish == 'true'
+        run: npm run sdk:check-compatibility
+        env:
+          # Protect the consumers already on this channel. A v1 -> v2 style cut is
+          # breaking vs latest and requires allow_breaking on a dispatched release.
+          SDK_DIST_TAG: ${{ steps.channel.outputs.dist_tag }}
+          SDK_ALLOW_BREAKING: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_breaking || 'false' }}
+
+      - name: Classify version bump (vs latest stable)
+        id: bump
+        if: steps.drift.outputs.publish == 'true'
+        shell: bash
+        # The version expresses distance from the last STABLE release, so the bump is
+        # always classified against `latest`. classify-bump applies the pre-1.0 cap
+        # (breaking -> minor while major is 0); set SDK_ALLOW_MAJOR=true to cut 1.0.0.
+        run: echo "type=$(node scripts/classify-bump.cjs latest)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish rc (develop)
+        if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'rc'
+        # rc artifacts are previews; not committed back. The version is
+        # bump(lastStable, type)-rc.<run_number>.
+        run: |
+          npm run sdk:generate
+          npm run sdk:publish
+        env:
+          SDK_PRERELEASE_CHANNEL: rc
+          SDK_PRERELEASE_BUMP: ${{ steps.bump.outputs.type }}
+          SDK_PRERELEASE_ITERATION: ${{ github.run_number }}
+          SDK_NPM_DIST_TAG: rc
+
+      - name: Publish release (production)
+        if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
+        # Bump versions.json by the classified type, bake it into the packages, publish
+        # to the latest tag, then commit the authoritative generated source below.
+        run: |
+          npm run sdk:version:bump -- ${{ steps.bump.outputs.type }}
+          npm run sdk:generate
+          npm run sdk:publish
+
+      - name: Commit released SDK source
+        if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packages versions.json
+          if git diff --cached --quiet; then
+            echo 'No source changes to commit.'
+            exit 0
+          fi
+          git commit -m "chore: publish SDK packages [skip ci]"
+          git push
