@@ -175,3 +175,43 @@ session's `rundit-back` work *relocates* here rather than being discarded:
 `detect-drift.cjs` moves in as-is; the `release-type.json` marker is superseded by
 `classify-bump.cjs`; the gitignore of generated artifacts in `rundit-back` becomes moot
 once codegen lives here.
+
+## Production cutover runbook
+
+The first stable release is the v1 → v2 cut. `latest` is still `0.2.0` (the old
+`/api/v1/` API); the new surface is v2. Sequence:
+
+1. **`develop` is current.** Ensure the breaking-gate fix is on `develop`
+   (`check-compatibility.cjs` tolerating pre-1.0 breaking). Pushing to `develop`
+   does not touch `spec/`, so it does not trigger `publish.yml`.
+
+2. **Bootstrap `production` with the tooling but *without* the spec.** `production`
+   must carry `publish.yml` + `scripts/` before rundit-back ships, but it must NOT
+   carry `spec/sdk.openapi.json` yet — otherwise bootstrapping would itself trigger a
+   `latest` publish. Bring `production` up to `develop` minus the spec:
+   ```sh
+   git switch production
+   git restore --source=develop --staged --worktree .   # match develop's tooling
+   git rm spec/sdk.openapi.json                          # spec arrives via rundit-back
+   git commit -m "chore: bootstrap SDK tooling on production"
+   git push origin production                            # no spec change -> no publish
+   ```
+
+3. **Merge rundit-back → production.** `ship-sdk-spec.yml` emits the v2 spec and pushes
+   `spec/sdk.openapi.json` to `rundit-sdk:production`, which triggers `publish.yml`:
+   detect-drift vs `latest` (v1) → differs → publish; breaking gate → pre-1.0 →
+   tolerated (warns); classify-bump → `major` capped to `minor` → **`0.3.0`** published
+   to `latest` with provenance; generated source committed back to `production`.
+
+After this, `latest` is v2 and subsequent rundit-back → production merges are
+non-breaking and publish automatically.
+
+### Branch-push requirement (applies to `production`)
+
+Two pushes target `rundit-sdk:production`: the spec ship (rundit-back's App token) and
+`publish.yml`'s release commit-back (`GITHUB_TOKEN`). Both fail on a protected branch.
+For this bot-owned, fully-generated repo the simplest reliable setup is to leave
+`production` **unprotected**, or to allow **both** the GitHub App and the
+`github-actions` bot to **bypass** push restrictions. (Requiring PRs would mean wiring
+PR + auto-merge into both the ship job and the commit-back — more machinery, no real
+benefit here since the workflows are the source of authority.)

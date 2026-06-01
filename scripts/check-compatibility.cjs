@@ -49,9 +49,17 @@ if (require.main === module) {
   const packageKeys = process.argv.slice(2)
   const targets = packageKeys.length > 0 ? packageKeys : Object.keys(sdkPackages)
   const allowBreaking = process.env.SDK_ALLOW_BREAKING === 'true'
+  // Pre-1.0 a breaking change is permitted (0.x has no stability guarantee) — same
+  // policy as classify-bump's major->minor cap. It is reported as a warning, not a
+  // failure, while the package's stable major is 0. SDK_ENFORCE_BREAKING=true forces
+  // the gate even pre-1.0; SDK_ALLOW_BREAKING=true allows it even post-1.0.
+  const enforcePre1 = process.env.SDK_ENFORCE_BREAKING === 'true'
   const distTag = process.env.SDK_DIST_TAG || 'latest'
+  const versionsPath = path.join(rootDir, 'versions.json')
+  const versions = fs.existsSync(versionsPath) ? JSON.parse(fs.readFileSync(versionsPath, 'utf8')) : {}
 
-  const breakingChanges = []
+  const fatal = []
+  const warnings = []
 
   for (const packageKey of targets) {
     const config = sdkPackages[packageKey]
@@ -76,27 +84,28 @@ if (require.main === module) {
       continue
     }
 
-    breakingChanges.push(...findBreakingChanges(publishedSpec, currentSpec, config.packageName))
+    const issues = findBreakingChanges(publishedSpec, currentSpec, config.packageName)
+    if (issues.length === 0) {
+      continue
+    }
+
+    const currentMajor = Number.parseInt(String(versions[packageKey] || '0.0.0').split('.')[0], 10) || 0
+    const tolerated = allowBreaking || (currentMajor === 0 && !enforcePre1)
+    ;(tolerated ? warnings : fatal).push(...issues)
   }
 
-  if (breakingChanges.length === 0) {
-    console.log('No breaking SDK API changes detected')
-    process.exit(0)
+  if (warnings.length > 0) {
+    console.warn(['Breaking SDK API changes (tolerated):', ...warnings.map((c) => `- ${c}`)].join('\n'))
+    console.warn('Allowed (pre-1.0 or SDK_ALLOW_BREAKING=true). Set SDK_ENFORCE_BREAKING=true to enforce pre-1.0.')
   }
 
-  const output = ['Breaking SDK API changes detected:']
-  for (const change of breakingChanges) {
-    output.push(`- ${change}`)
+  if (fatal.length > 0) {
+    console.error(['Breaking SDK API changes detected:', ...fatal.map((c) => `- ${c}`)].join('\n'))
+    process.exit(1)
   }
 
-  if (allowBreaking) {
-    console.warn(output.join('\n'))
-    console.warn('Continuing because SDK_ALLOW_BREAKING=true')
-    process.exit(0)
-  }
-
-  console.error(output.join('\n'))
-  process.exit(1)
+  console.log(warnings.length > 0 ? 'No fatal SDK API changes' : 'No breaking SDK API changes detected')
+  process.exit(0)
 }
 
 function loadPublishedSpec(packageName, distTag = 'latest') {
