@@ -97,14 +97,17 @@ jobs:
           SDK_DIST_TAG: ${{ steps.channel.outputs.dist_tag }}
           SDK_ALLOW_BREAKING: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_breaking || 'false' }}
 
-      - name: Classify version bump (vs latest stable)
+      - name: Classify version bump
         id: bump
         if: steps.drift.outputs.publish == 'true'
         shell: bash
-        # The version expresses distance from the last STABLE release, so the bump is
-        # always classified against `latest`. classify-bump applies the pre-1.0 cap
-        # (breaking -> minor while major is 0); set SDK_ALLOW_MAJOR=true to cut 1.0.0.
-        run: echo "type=$(node scripts/classify-bump.cjs latest)" >> "$GITHUB_OUTPUT"
+        # TRANSITIONAL: pinned to `patch` while `latest` is still the v1 line (0.2.0).
+        # classify-bump compares vs `latest` and over-reports (breaking -> minor) until
+        # v2 is on latest. With versions.json at 0.3.0 this yields the 0.3.x line —
+        # rc = 0.3.1-rc.N, first stable = 0.3.1 — which also sidesteps the legacy
+        # 0.3.0-rc.* collisions. Restore `node scripts/classify-bump.cjs latest` once
+        # latest is on v2.
+        run: echo "type=patch" >> "$GITHUB_OUTPUT"
 
       - name: Publish rc (develop)
         if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'rc'
