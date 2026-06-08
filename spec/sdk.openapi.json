@@ -1,0 +1,5562 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/api/v2/sdk/companies/dashboards": {
+      "post": {
+        "description": "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively).",
+        "operationId": "companies.getDashboards",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetBatchDashboardBodyDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkBatchDashboardResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "PREFERRED tool for multi-company analysis — full dashboards for many companies in one call",
+        "tags": [
+          "sdk-companies"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "companies",
+        "x-sdk-operation": "getDashboards"
+      }
+    },
+    "/api/v2/sdk/companies/{id}/dashboard": {
+      "get": {
+        "description": "Returns company metadata, positions per fund, all metrics with data points, recent transactions, and report summaries for a single company. For more than one company, prefer POST /companies/dashboards (`companies.getDashboards`) instead — it returns the same payload per company in one call and avoids the N+1 pattern. Use `metricsFrom` to limit metric history, `transactionLimit` and `reportLimit` to cap list sizes.",
+        "operationId": "companies.getDashboard",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Company identifier",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "currency",
+            "required": true,
+            "in": "query",
+            "description": "Reporting currency code (ISO 4217).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metricsFrom",
+            "required": false,
+            "in": "query",
+            "description": "Lower bound for metric data points (ISO 8601). Omit to include all available history.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "transactionLimit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum number of transactions to include (most recent first). Defaults to 10.",
+            "schema": {
+              "default": 10,
+              "type": "number"
+            }
+          },
+          {
+            "name": "reportLimit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum number of reports to include (most recent first). Defaults to 5.",
+            "schema": {
+              "default": 5,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkCompanyDashboardDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get full company dashboard for ONE company",
+        "tags": [
+          "sdk-companies"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "companies",
+        "x-sdk-operation": "getDashboard"
+      }
+    },
+    "/api/v2/sdk/companies/{id}": {
+      "get": {
+        "description": "Returns the full company object for a single company. Includes all compact-list fields (id, name, type, currency, website, logo) plus extended metadata: legal name, status, description, vision, address, city, state, country, operating countries, VAT number, founding year, established date, total funding, and accessible fund ids (as `companyGroupIds`). Returns 404 if the company does not exist or is inaccessible to the caller.",
+        "operationId": "companies.getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Company identifier",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkCompanyDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get one company available to the SDK consumer",
+        "tags": [
+          "sdk-companies"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "companies",
+        "x-sdk-operation": "getOne"
+      }
+    },
+    "/api/v2/sdk/companies": {
+      "get": {
+        "description": "Returns the compact form (id, name, currency, type, website, logo) for every company the caller can read. Filter by `companyIds`, `companyGroupIds`, and/or `nameSearch` (case-insensitive substring on display name; accepts an array to resolve multiple companies at once with OR semantics — e.g. `nameSearch=[\"acme\",\"beta\",\"gamma\"]` returns any company whose name contains any of the three substrings). Avoids listing the full portfolio when the agent only knows companies by name.",
+        "operationId": "companies.getAll",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyIds",
+            "required": false,
+            "in": "query",
+            "description": "Restrict results to these company identifiers",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "companyGroupIds",
+            "required": false,
+            "in": "query",
+            "description": "Restrict results to companies that belong to any of these company groups",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "nameSearch",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match on company display name. Pass an array to resolve multiple companies in one call — a company matches if its name contains ANY of the listed substrings (OR semantics). Combine with companyIds/companyGroupIds to find specific companies without first listing the entire portfolio.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkCompaniesListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "List companies available to the SDK consumer",
+        "tags": [
+          "sdk-companies"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "companies",
+        "x-sdk-operation": "getAll"
+      }
+    },
+    "/api/v2/sdk/company-groups": {
+      "get": {
+        "description": "Returns compact fund metadata (id, name, demo flag, color, member company ids). Filter by `companyGroupIds` and/or `nameSearch` (case-insensitive substring on name; accepts an array to resolve multiple groups in one call with OR semantics — e.g. `nameSearch=[\"fund i\",\"fund ii\"]`).",
+        "operationId": "companyGroups.getAll",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyGroupIds",
+            "required": false,
+            "in": "query",
+            "description": "Restrict results to these company group identifiers",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "nameSearch",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match on company group display name. Pass an array to resolve multiple groups in one call — a group matches if its name contains ANY of the listed substrings (OR semantics). Useful for finding funds or visibility groups by name without first listing all groups.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkCompanyGroupsListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "List funds available to the SDK consumer",
+        "tags": [
+          "sdk-company-groups"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "companyGroups",
+        "x-sdk-operation": "getAll"
+      }
+    },
+    "/api/v2/sdk/company-groups/{id}": {
+      "get": {
+        "description": "Returns full fund details. Includes all compact-list fields (id, name, type, currency, logo) plus extended fund metadata: legal name, domicile, management company, GP, vintage year, fund currency, opening and closing dates, legal form, investment policy, fees, regulatory info, and service providers. Also includes the list of member companies the caller can access. Returns 404 if the fund does not exist or is inaccessible to the caller.",
+        "operationId": "companyGroups.getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Company group identifier",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkCompanyGroupDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get one fund available to the SDK consumer",
+        "tags": [
+          "sdk-company-groups"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "companyGroups",
+        "x-sdk-operation": "getOne"
+      }
+    },
+    "/api/v2/sdk/positions/portfolio/summary": {
+      "get": {
+        "description": "Returns one row per company with position data (invested, fair value, multiple, ROI) and latest values for selected metrics. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway. Override with `metricTypeNames`. Designed for portfolio overview tables.",
+        "operationId": "positions.getPortfolioSummary",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyGroupIds",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to companies that belong to any of these company groups.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "companyIds",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to these company identifiers.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "currency",
+            "required": true,
+            "in": "query",
+            "description": "Reporting currency code (ISO 4217).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "description": "Position summary date (ISO 8601). Defaults to today.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "metricTypeNames",
+            "required": false,
+            "in": "query",
+            "description": "Metric type names to include in the latest metrics snapshot. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkPortfolioSummaryListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get portfolio summary with positions and key metrics per company",
+        "tags": [
+          "sdk-positions"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "positions",
+        "x-sdk-operation": "getPortfolioSummary"
+      }
+    },
+    "/api/v2/sdk/positions/companies/{id}": {
+      "get": {
+        "description": "Returns all fund-level positions for a single company — one entry per fund (`companyGroupId`) that holds a position in the company. Each entry carries invested amount, fair market value, ownership percentage, share counts, multiple, and ROI, all FX-converted to `currency` (ISO 4217, required). Filter by `companyGroupIds` to scope to specific funds. Use `date` (ISO 8601) for a historical snapshot; omit to use the latest available data.",
+        "operationId": "positions.getCompanyPositions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Company identifier",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyGroupIds",
+            "required": false,
+            "in": "query",
+            "description": "Optional list of company group identifiers to filter the position breakdown",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "currency",
+            "required": true,
+            "in": "query",
+            "description": "Reporting currency code",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "description": "Optional summary date in ISO format",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkCompanyPositionsListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get positions for one company",
+        "tags": [
+          "sdk-positions"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "positions",
+        "x-sdk-operation": "getCompanyPositions"
+      }
+    },
+    "/api/v2/sdk/positions/portfolio": {
+      "get": {
+        "description": "Returns a single aggregated position object that sums invested amount, fair market value, ownership percentage, share counts, multiple, and ROI across all accessible companies (optionally filtered by `companyIds` and/or `companyGroupIds` to scope to specific funds). `currency` (ISO 4217, required) converts all monetary values. Use `date` (ISO 8601) for a historical snapshot; omit for the latest available data. For a per-company breakdown instead of a single aggregate, use `GET /positions/portfolio/summary`.",
+        "operationId": "positions.getPortfolioPositions",
+        "parameters": [
+          {
+            "name": "companyGroupIds",
+            "required": false,
+            "in": "query",
+            "description": "Optional list of company group identifiers to filter the portfolio positions",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "companyIds",
+            "required": false,
+            "in": "query",
+            "description": "Optional list of company identifiers to narrow the aggregation to",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "currency",
+            "required": true,
+            "in": "query",
+            "description": "Reporting currency code",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "date",
+            "required": false,
+            "in": "query",
+            "description": "Optional summary date in ISO format",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkPortfolioPositionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get aggregated portfolio position totals",
+        "tags": [
+          "sdk-positions"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "positions",
+        "x-sdk-operation": "getPortfolioPositions"
+      }
+    },
+    "/api/v2/sdk/transactions/summary": {
+      "get": {
+        "description": "Returns aggregated transaction statistics: total invested, total realized, transaction count, company count, and breakdown by transaction type. Optionally group by period (Month, Quarter, Year). Filter by company, fund (`companyGroupIds`), and date range.",
+        "operationId": "transactions.getSummary",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyGroupIds",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to companies that belong to any of these company groups.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "companyIds",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to these company identifiers.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "currency",
+            "required": true,
+            "in": "query",
+            "description": "Reporting currency code (ISO 4217).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "groupBy",
+            "required": false,
+            "in": "query",
+            "description": "Group results by this period granularity. When omitted, returns a single summary across all time.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Month",
+                "Quarter",
+                "Year"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "Lower bound for transaction date (ISO 8601, inclusive).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Upper bound for transaction date (ISO 8601, inclusive).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkTransactionSummaryResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get transaction activity summary",
+        "tags": [
+          "sdk-transactions"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "transactions",
+        "x-sdk-operation": "getSummary"
+      }
+    },
+    "/api/v2/sdk/transactions/companies/{id}": {
+      "get": {
+        "description": "Returns all transactions for a single company, ordered by date descending. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyGroupIds` to scope to a specific fund, `types` to limit to specific transaction kinds, and `priorTo` (ISO 8601) for a historical snapshot. Requires transaction read access on the company.",
+        "operationId": "transactions.getCompanyTransactions",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Company identifier",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyGroupIds",
+            "required": false,
+            "in": "query",
+            "description": "Optional company group identifiers to filter transactions by",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "types",
+            "required": false,
+            "in": "query",
+            "description": "Restrict results to these transaction types",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "Auction",
+                  "ConvertibleNote",
+                  "ConvertToEquity",
+                  "Dividend",
+                  "EquityInvestment",
+                  "EquityReceived",
+                  "Extend",
+                  "FutureEquityAgreement",
+                  "Insolvency",
+                  "IPO",
+                  "LimitedAuction",
+                  "OptionsReceived",
+                  "OtherExit",
+                  "OtherInvestment",
+                  "OtherRealization",
+                  "Payback",
+                  "Proprietary",
+                  "TradeSale",
+                  "ValuationChange",
+                  "WriteOff"
+                ]
+              }
+            }
+          },
+          {
+            "name": "priorTo",
+            "required": false,
+            "in": "query",
+            "description": "Exclude transactions on or after this ISO 8601 date (cut-off filter)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkTransactionsListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get transactions for one company",
+        "tags": [
+          "sdk-transactions"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "transactions",
+        "x-sdk-operation": "getCompanyTransactions"
+      }
+    },
+    "/api/v2/sdk/transactions": {
+      "get": {
+        "description": "Returns transactions across multiple companies. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyIds`, `companyGroupIds`, `types`, and `priorTo` (ISO 8601 upper-bound date for a historical snapshot). When `companyIds` is provided, the caller must have transaction read access on every listed company.",
+        "operationId": "transactions.getTransactions",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyGroupIds",
+            "required": false,
+            "in": "query",
+            "description": "Optional company group identifiers to filter transactions by",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "types",
+            "required": false,
+            "in": "query",
+            "description": "Restrict results to these transaction types",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "Auction",
+                  "ConvertibleNote",
+                  "ConvertToEquity",
+                  "Dividend",
+                  "EquityInvestment",
+                  "EquityReceived",
+                  "Extend",
+                  "FutureEquityAgreement",
+                  "Insolvency",
+                  "IPO",
+                  "LimitedAuction",
+                  "OptionsReceived",
+                  "OtherExit",
+                  "OtherInvestment",
+                  "OtherRealization",
+                  "Payback",
+                  "Proprietary",
+                  "TradeSale",
+                  "ValuationChange",
+                  "WriteOff"
+                ]
+              }
+            }
+          },
+          {
+            "name": "priorTo",
+            "required": false,
+            "in": "query",
+            "description": "Exclude transactions on or after this ISO 8601 date (cut-off filter)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyIds",
+            "required": false,
+            "in": "query",
+            "description": "Optional company identifiers to filter transactions by",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkTransactionsListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get transactions for multiple companies",
+        "tags": [
+          "sdk-transactions"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "transactions",
+        "x-sdk-operation": "getTransactions"
+      }
+    },
+    "/api/v2/sdk/metrics/types": {
+      "get": {
+        "description": "Returns predefined metric types plus user-defined metric types scoped to the caller — VC group custom types for VC users, company custom types for company users. Each entry carries the metric shape needed to interpret values: `valueType` is `\"numeric\"` (read `point.value` as a number; may carry `rangeConfig` with min/max/step for ranged metrics) or `\"option\"` (read `point.optionValue` as a string from `optionConfig.options[]` — this is how boolean / yes-no metrics are encoded, as two options typically labelled \"Yes\"/\"No\"). `unit.unit` describes the measurement (`Currency`, `Percentage`, `Number`, time units, ...); `unit.currencyCode` is intentionally null on this endpoint because monetary types resolve their concrete currency per company — call /metrics to receive `unit.currencyCode` populated with each company's native currency, or pass `currency` to convert all monetary metrics to a chosen target.",
+        "operationId": "metrics.getTypes",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkMetricTypesListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "List metric types available to the SDK consumer",
+        "tags": [
+          "sdk-metrics"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "metrics",
+        "x-sdk-operation": "getTypes"
+      }
+    },
+    "/api/v2/sdk/metrics": {
+      "post": {
+        "description": "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately.",
+        "operationId": "metrics.search",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetricSearchDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkCompanyMetricsListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Read metric values for accessible companies, grouped by company",
+        "tags": [
+          "sdk-metrics"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "metrics",
+        "x-sdk-operation": "search"
+      }
+    },
+    "/api/v2/sdk/metrics/compare": {
+      "post": {
+        "description": "Returns date-aligned rows for one or more metric types across multiple companies. Pass `metricTypeIds` (resolve from /metrics/types) to compare several metrics in a single round trip; names are not accepted on this endpoint to keep selection stable. Each row contains one value per company for a given period. Optionally includes period-over-period percentage change. Use `companyIds`, `companyNameSearch`, or `companyGroupIds` to select companies.",
+        "operationId": "metrics.compare",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetricCompareDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkMetricCompareMultiResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Compare metrics across companies",
+        "tags": [
+          "sdk-metrics"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "metrics",
+        "x-sdk-operation": "compare"
+      }
+    },
+    "/api/v2/sdk/metrics/aggregate": {
+      "post": {
+        "description": "Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation.",
+        "operationId": "metrics.aggregate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetricAggregateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkMetricAggregateResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Aggregate metrics across portfolio companies",
+        "tags": [
+          "sdk-metrics"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "metrics",
+        "x-sdk-operation": "aggregate"
+      }
+    },
+    "/api/v2/sdk/company-reports": {
+      "get": {
+        "description": "Returns lightweight report metadata (id, title, period, publisher company reference). Use GET /company-reports/:id to fetch the full content of a specific report. Visibility is determined by the caller's roles — VC users see reports for managed-portfolio companies, company employees see their own company's reports, portfolio investors see Published reports shared with their visibility groups. Filters narrow the list by company ids, funds (`companyGroupIds`), company name substring (`companyNameSearch`), and reporting period (timeframe + date range).",
+        "operationId": "companyReports.list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyIds",
+            "required": false,
+            "in": "query",
+            "description": "Restrict results to these companies. Defaults to all companies the caller can access.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "companyGroupIds",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to companies that belong to any of these company groups.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "companyNameSearch",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive substring match on the reporting company name. Pass an array to resolve multiple companies in one call — a report matches if its company name contains ANY of the listed substrings (OR semantics). Intersects with `companyIds`/`companyGroupIds`.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "timeframe",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to a reporting period granularity (Month, Quarter, Year).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Month",
+                "Quarter",
+                "Year"
+              ]
+            }
+          },
+          {
+            "name": "from",
+            "required": false,
+            "in": "query",
+            "description": "Lower bound for the reporting period date (ISO 8601, inclusive).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": false,
+            "in": "query",
+            "description": "Upper bound for the reporting period date (ISO 8601, inclusive).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkCompanyReportsListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "List published company reports accessible to the caller (metadata only)",
+        "tags": [
+          "sdk-company-reports"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "companyReports",
+        "x-sdk-operation": "list"
+      }
+    },
+    "/api/v2/sdk/company-reports/{id}": {
+      "get": {
+        "description": "Returns the report metadata plus structured sections (text/markdown/image) and attachments with pre-signed URLs. Returns 404 if the report does not exist and 403 if the caller cannot access it under their role-based permissions.",
+        "operationId": "companyReports.getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Report identifier",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkCompanyReportDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Fetch the full content of a single company report",
+        "tags": [
+          "sdk-company-reports"
+        ],
+        "x-sdk-audiences": [
+          "embed",
+          "client"
+        ],
+        "x-sdk-namespace": "companyReports",
+        "x-sdk-operation": "getOne"
+      }
+    }
+  },
+  "info": {
+    "title": "SDK API",
+    "description": "SDK API documentation for embedded and API key clients.\n\n**Terminology note:** Throughout this API, \"funds\" and \"company groups\" refer to the same concept — an investment vehicle (fund, SPV, or similar) that holds positions in portfolio companies. The internal data model uses the term `companyGroup` / `companyGroupId` in all parameter and field names; the human-readable descriptions use \"fund\" for clarity.",
+    "version": "v2",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "sdk-embed-token": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http",
+        "description": "Embed bearer token for embedded SDK clients"
+      },
+      "sdk-client-api-key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "API key for external SDK clients"
+      }
+    },
+    "schemas": {
+      "GetBatchDashboardBodyDto": {
+        "type": "object",
+        "properties": {
+          "companyIds": {
+            "description": "Company identifiers to include in the batch.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "currency": {
+            "type": "string",
+            "description": "Reporting currency code (ISO 4217)."
+          },
+          "metricsFrom": {
+            "type": "string",
+            "description": "Lower bound for metric data points (ISO 8601). Omit to include all available history."
+          },
+          "metricsTimeframe": {
+            "type": "string",
+            "description": "Restrict metric data points to this reporting period granularity.",
+            "enum": [
+              "Month",
+              "Quarter",
+              "Year"
+            ]
+          },
+          "metricTypeNames": {
+            "description": "Metric type names to include. Omit to include all metrics. Use metric type ids via `metricTypeIds` when ids are known.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "metricTypeIds": {
+            "description": "Metric type identifiers to include. Intersected with `metricTypeNames` when both are provided.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "conversionStrategy": {
+            "type": "string",
+            "description": "FX rate selection when converting monetary metrics. `LATEST_FX_RATE` (default) uses the most recent rate; `ENTITY_DATE_RATE` uses the rate on each point's date.",
+            "enum": [
+              "LATEST_FX_RATE",
+              "ENTITY_DATE_RATE"
+            ]
+          },
+          "transactionLimit": {
+            "type": "number",
+            "description": "Maximum number of transactions per company (most recent first). Defaults to 10.",
+            "default": 10
+          },
+          "reportLimit": {
+            "type": "number",
+            "description": "Maximum number of reports per company (most recent first). Defaults to 5.",
+            "default": 5
+          }
+        },
+        "required": [
+          "companyIds",
+          "currency"
+        ]
+      },
+      "SdkCompanyDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Company display name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Company type",
+            "nullable": true
+          },
+          "website": {
+            "type": "string",
+            "description": "Company website URL",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "description": "Company reporting currency as ISO 4217 code (e.g. USD, EUR)"
+          },
+          "logoImageFileUuid": {
+            "type": "string",
+            "description": "Logo image file UUID",
+            "nullable": true
+          },
+          "legalName": {
+            "type": "string",
+            "description": "Legal company name",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "description": "Company lifecycle status",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "description": "Company description",
+            "nullable": true
+          },
+          "vision": {
+            "type": "string",
+            "description": "Company vision statement",
+            "nullable": true
+          },
+          "address": {
+            "type": "string",
+            "description": "Street address",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "description": "City",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "description": "State or region",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "description": "Country",
+            "nullable": true
+          },
+          "operatingCountries": {
+            "description": "Countries the company operates in",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "vatNumber": {
+            "type": "string",
+            "description": "VAT registration number",
+            "nullable": true
+          },
+          "foundingYear": {
+            "type": "number",
+            "description": "Year the company was founded",
+            "nullable": true
+          },
+          "established": {
+            "type": "string",
+            "description": "Date the company was established (ISO 8601)",
+            "nullable": true
+          },
+          "fundingTotal": {
+            "type": "number",
+            "description": "Total funding raised by the company",
+            "nullable": true
+          },
+          "companyGroupIds": {
+            "description": "Accessible company group identifiers",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "currency",
+          "logoImageFileUuid"
+        ]
+      },
+      "SdkCompanyReferenceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Company display name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Company type",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type"
+        ]
+      },
+      "SdkCompanyGroupReferenceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Company group identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Company group name"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "SdkFairValueItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Fair value item identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier"
+          },
+          "fairValue": {
+            "type": "number",
+            "description": "Fair value amount"
+          },
+          "type": {
+            "type": "string",
+            "description": "Transaction type",
+            "enum": [
+              "Auction",
+              "ConvertibleNote",
+              "ConvertToEquity",
+              "Dividend",
+              "EquityInvestment",
+              "EquityReceived",
+              "Extend",
+              "FutureEquityAgreement",
+              "Insolvency",
+              "IPO",
+              "LimitedAuction",
+              "OptionsReceived",
+              "OtherExit",
+              "OtherInvestment",
+              "OtherRealization",
+              "Payback",
+              "Proprietary",
+              "TradeSale",
+              "ValuationChange",
+              "WriteOff"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "companyGroupId",
+          "fairValue",
+          "type"
+        ]
+      },
+      "InvestorType": {
+        "type": "string",
+        "enum": [
+          "organization",
+          "individual"
+        ],
+        "description": "Investor type"
+      },
+      "SdkSignificantInvestorDto": {
+        "type": "object",
+        "properties": {
+          "investorType": {
+            "description": "Investor type",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/InvestorType"
+              }
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "Investor name"
+          },
+          "lastName": {
+            "type": "string",
+            "description": "Investor last name"
+          },
+          "email": {
+            "type": "string",
+            "description": "Investor email"
+          },
+          "website": {
+            "type": "string",
+            "description": "Investor website"
+          }
+        },
+        "required": [
+          "investorType",
+          "name"
+        ]
+      },
+      "SdkFundingRoundInfoDto": {
+        "type": "object",
+        "properties": {
+          "roundType": {
+            "type": "string",
+            "description": "Funding round type",
+            "enum": [
+              "poc",
+              "pre-seed",
+              "seed",
+              "late-seed",
+              "seed-extension",
+              "pre-series-a-round",
+              "bridge-round",
+              "a-round",
+              "b-round",
+              "c-round",
+              "d-round-plus",
+              "d-round",
+              "e-round",
+              "f-round",
+              "g-round",
+              "h-round",
+              "i-round",
+              "j-round",
+              "k-round",
+              "l-round",
+              "m-round",
+              "n-round"
+            ],
+            "nullable": true
+          },
+          "roleInRound": {
+            "type": "string",
+            "description": "Role in the round",
+            "enum": [
+              "lead",
+              "co-lead",
+              "minority-co-investor",
+              "did-not-participate"
+            ],
+            "nullable": true
+          },
+          "significantInvestors": {
+            "description": "Significant investors in the round",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkSignificantInvestorDto"
+            }
+          },
+          "roundSize": {
+            "type": "number",
+            "description": "Round size",
+            "nullable": true
+          },
+          "totalFundingRaised": {
+            "type": "number",
+            "description": "Total funding raised at the round time",
+            "nullable": true
+          }
+        }
+      },
+      "SdkCompanyPositionDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "investmentStatus": {
+            "type": "string",
+            "description": "Investment status",
+            "nullable": true
+          },
+          "invested": {
+            "type": "number",
+            "description": "Total invested amount"
+          },
+          "ownership": {
+            "type": "number",
+            "description": "Ownership percentage",
+            "nullable": true
+          },
+          "companyValuation": {
+            "type": "number",
+            "description": "Company valuation",
+            "nullable": true
+          },
+          "sharesOwnedTotal": {
+            "type": "number",
+            "description": "Number of units held"
+          },
+          "pricePerShare": {
+            "type": "number",
+            "description": "Price per share",
+            "nullable": true
+          },
+          "sharesIssuedTotalDiluted": {
+            "type": "number",
+            "description": "Total diluted shares issued"
+          },
+          "sharesIssuedTotalCurrent": {
+            "type": "number",
+            "description": "Total current shares issued"
+          },
+          "fairValueWithoutEquity": {
+            "type": "number",
+            "description": "Fair value excluding equity",
+            "nullable": true
+          },
+          "fairValue": {
+            "type": "number",
+            "description": "Position fair value",
+            "nullable": true
+          },
+          "customSummaryFairValue": {
+            "type": "number",
+            "description": "Custom fair value override applied at summary level",
+            "nullable": true
+          },
+          "askFairValue": {
+            "type": "boolean",
+            "description": "Whether a fair value input is required",
+            "nullable": true
+          },
+          "xirr": {
+            "type": "number",
+            "description": "Extended internal rate of return",
+            "nullable": true
+          },
+          "roi": {
+            "type": "number",
+            "description": "Return on investment",
+            "nullable": true
+          },
+          "realized": {
+            "type": "number",
+            "description": "Realized amount",
+            "nullable": true
+          },
+          "investments": {
+            "type": "number",
+            "description": "Number of investments contributing to the position",
+            "nullable": true
+          },
+          "defaultFairValueItems": {
+            "description": "Default fair value items",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkFairValueItemDto"
+            }
+          },
+          "totalProfits": {
+            "type": "number",
+            "description": "Total profits",
+            "nullable": true
+          },
+          "exitProfits": {
+            "type": "number",
+            "description": "Exit profits",
+            "nullable": true
+          },
+          "equityFairValue": {
+            "type": "number",
+            "description": "Equity fair value",
+            "nullable": true
+          },
+          "multiple": {
+            "type": "number",
+            "description": "Investment multiple",
+            "nullable": true
+          },
+          "roundInfo": {
+            "description": "Funding round info",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkFundingRoundInfoDto"
+              }
+            ]
+          },
+          "valuationMethod": {
+            "type": "string",
+            "description": "Valuation method",
+            "enum": [
+              "Historical",
+              "NewFinancingRound",
+              "PubliclyListedSecurity",
+              "Realization",
+              "RecentTransactionMultiples",
+              "RecentMarketMultiples",
+              "RecentMarketAndTransactionMultiples",
+              "DiscountToPrimaryRound",
+              "ThirdPartyOpinion",
+              "Dcf",
+              "Other"
+            ],
+            "nullable": true
+          },
+          "totalFundingRaised": {
+            "type": "number",
+            "description": "Total funding raised",
+            "nullable": true
+          },
+          "averageInvestmentAmount": {
+            "type": "number",
+            "description": "Average investment amount",
+            "nullable": true
+          },
+          "investedInitial": {
+            "type": "number",
+            "description": "Initially invested amount",
+            "nullable": true
+          },
+          "investedFollowOn": {
+            "type": "number",
+            "description": "Follow-on invested amount",
+            "nullable": true
+          },
+          "dateOfInitialInvestment": {
+            "type": "string",
+            "description": "Initial investment date",
+            "nullable": true
+          },
+          "initialInvestmentStage": {
+            "type": "string",
+            "description": "Initial investment stage",
+            "enum": [
+              "poc",
+              "pre-seed",
+              "seed",
+              "late-seed",
+              "seed-extension",
+              "pre-series-a-round",
+              "bridge-round",
+              "a-round",
+              "b-round",
+              "c-round",
+              "d-round-plus",
+              "d-round",
+              "e-round",
+              "f-round",
+              "g-round",
+              "h-round",
+              "i-round",
+              "j-round",
+              "k-round",
+              "l-round",
+              "m-round",
+              "n-round"
+            ],
+            "nullable": true
+          },
+          "latestInvestment": {
+            "type": "number",
+            "description": "Latest investment amount",
+            "nullable": true
+          },
+          "dateOfLatestInvestment": {
+            "type": "string",
+            "description": "Latest investment date",
+            "nullable": true
+          },
+          "currentStage": {
+            "type": "string",
+            "description": "Current stage",
+            "enum": [
+              "poc",
+              "pre-seed",
+              "seed",
+              "late-seed",
+              "seed-extension",
+              "pre-series-a-round",
+              "bridge-round",
+              "a-round",
+              "b-round",
+              "c-round",
+              "d-round-plus",
+              "d-round",
+              "e-round",
+              "f-round",
+              "g-round",
+              "h-round",
+              "i-round",
+              "j-round",
+              "k-round",
+              "l-round",
+              "m-round",
+              "n-round"
+            ],
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "description": "Reporting currency code"
+          },
+          "date": {
+            "type": "string",
+            "description": "Position summary date"
+          }
+        },
+        "required": [
+          "companyId",
+          "invested",
+          "sharesOwnedTotal",
+          "sharesIssuedTotalDiluted",
+          "sharesIssuedTotalCurrent",
+          "currency",
+          "date"
+        ]
+      },
+      "SdkMetricUnitDto": {
+        "type": "object",
+        "properties": {
+          "unit": {
+            "type": "object",
+            "description": "Unit category. Examples: \"Currency\", \"Percentage\", \"Number\", \"Day\", \"Month\", \"Quarter\", \"Year\"."
+          },
+          "currencyCode": {
+            "type": "string",
+            "description": "ISO 4217 currency code, only populated when the unit is \"Currency\" *and* a per-company context is known. On /metrics this reflects the company's native currency (or the requested `currency` target when FX-converted). On /metrics/types it is always null — the type is shared across companies, so no single code applies; resolve it via /metrics.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "unit"
+        ]
+      },
+      "SdkMetricTypeOptionDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "Allowed option value as it appears in `points[].optionValue`. For boolean (yes/no) metrics the options are typically \"Yes\" and \"No\"."
+          },
+          "isPositive": {
+            "type": "boolean",
+            "description": "Whether this option counts as a positive outcome (e.g. \"Yes\" is usually positive)."
+          }
+        },
+        "required": [
+          "value",
+          "isPositive"
+        ]
+      },
+      "SdkMetricTypeOptionConfigDto": {
+        "type": "object",
+        "properties": {
+          "options": {
+            "description": "Allowed values for option-valued metrics. Each point's `optionValue` must match one of these. Boolean metrics surface here as two options (commonly \"Yes\"/\"No\").",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricTypeOptionDto"
+            }
+          }
+        },
+        "required": [
+          "options"
+        ]
+      },
+      "SdkMetricTypeRangeConfigDto": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "number",
+            "description": "Inclusive lower bound for valid numeric values."
+          },
+          "max": {
+            "type": "number",
+            "description": "Inclusive upper bound for valid numeric values."
+          },
+          "step": {
+            "type": "number",
+            "description": "Step / increment between valid values."
+          }
+        },
+        "required": [
+          "min",
+          "max",
+          "step"
+        ]
+      },
+      "SdkMetricTypeDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Metric type identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "Metric type display name."
+          },
+          "shortName": {
+            "type": "string",
+            "description": "Short display name / abbreviation.",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "description": "Free-form description of what the metric represents.",
+            "nullable": true
+          },
+          "origin": {
+            "type": "object",
+            "description": "Origin: predefined by Rundit or user-defined within the VC group."
+          },
+          "aggMethod": {
+            "type": "object",
+            "description": "How values aggregate across periods when rolled up (e.g. SUM, AVG, LAST_AVAILABLE, NONE)."
+          },
+          "valueType": {
+            "type": "object",
+            "description": "Shape of each point's value: `\"numeric\"` — read `points[].value` as a number; `\"option\"` — read `points[].optionValue` as a string from `optionConfig.options[]` (this is how boolean / yes-no metrics are encoded — two options, typically \"Yes\"/\"No\"). Numeric metrics may additionally carry a `rangeConfig` constraining `value` to [min, max] with a `step`."
+          },
+          "unit": {
+            "description": "Unit of measurement.",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkMetricUnitDto"
+              }
+            ]
+          },
+          "optionConfig": {
+            "description": "Allowed values when `valueType === \"option\"`. Each point reports its choice in `optionValue`. Boolean (yes/no) metrics surface here as two options.",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkMetricTypeOptionConfigDto"
+              }
+            ]
+          },
+          "rangeConfig": {
+            "description": "Bounds for ranged numeric metrics: each point's `value` is constrained to `[min, max]` with the given `step`. Absent when the metric is unbounded.",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkMetricTypeRangeConfigDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "aggMethod"
+        ]
+      },
+      "SdkMetricPointDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Period end date (ISO 8601, YYYY-MM-DD)."
+          },
+          "timeframe": {
+            "type": "object",
+            "description": "Reporting period granularity."
+          },
+          "value": {
+            "type": "number",
+            "description": "Numeric value for the period. Populated when the parent metric type has `valueType === \"numeric\"` (including ranged numerics). Null for option-valued metrics — read `optionValue` instead — or when the numeric value could not be computed.",
+            "nullable": true
+          },
+          "optionValue": {
+            "type": "string",
+            "description": "String value for option-valued metrics (`valueType === \"option\"`). Matches one of the entries in the metric type's `optionConfig.options[].value` — e.g. \"Yes\"/\"No\" for boolean metrics. Null for numeric metrics or when no choice has been reported for the period.",
+            "nullable": true
+          },
+          "valueError": {
+            "type": "string",
+            "description": "Computation error message, if the value could not be calculated.",
+            "nullable": true
+          },
+          "aggregated": {
+            "type": "boolean",
+            "description": "True when the point is derived (e.g. aggregated from sub-rows) rather than directly stored."
+          }
+        },
+        "required": [
+          "date",
+          "timeframe",
+          "value",
+          "optionValue"
+        ]
+      },
+      "SdkCompanyMetricDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Metric instance identifier (unique per company)."
+          },
+          "metricType": {
+            "description": "Metric type definition.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkMetricTypeDto"
+              }
+            ]
+          },
+          "points": {
+            "description": "Reported data points for this metric.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricPointDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "metricType",
+          "points"
+        ]
+      },
+      "SdkCompanyDashboardMetricsDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier."
+          },
+          "company": {
+            "description": "Company reference.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "metrics": {
+            "description": "All metrics with data points.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyMetricDto"
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "company",
+          "metrics"
+        ]
+      },
+      "SdkCompanyReportSummaryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Report identifier."
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable report title."
+          },
+          "date": {
+            "type": "string",
+            "description": "Reporting period end date (ISO 8601, YYYY-MM-DD)."
+          },
+          "timeframe": {
+            "type": "object",
+            "description": "Reporting period granularity."
+          },
+          "publishedAt": {
+            "type": "string",
+            "description": "When the report was published (ISO 8601).",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company that published the report.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "date",
+          "timeframe",
+          "company"
+        ]
+      },
+      "SdkCompanyDashboardDto": {
+        "type": "object",
+        "properties": {
+          "company": {
+            "description": "Full company metadata.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyDto"
+              }
+            ]
+          },
+          "positions": {
+            "description": "Positions per fund / company group.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyPositionDto"
+            }
+          },
+          "metrics": {
+            "description": "Metrics with data points. Each entry carries the metric type definition and reported data points.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyDashboardMetricsDto"
+              }
+            ]
+          },
+          "transactions": {
+            "type": "array",
+            "description": "Recent transactions, ordered by date descending. Limited by `transactionLimit` query parameter.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "reports": {
+            "description": "Recent report summaries (metadata only). Limited by `reportLimit` query parameter.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyReportSummaryDto"
+            }
+          }
+        },
+        "required": [
+          "company",
+          "positions",
+          "metrics",
+          "transactions",
+          "reports"
+        ]
+      },
+      "SdkPaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "type": "string",
+            "description": "Cursor for the next page; null when no more pages are available",
+            "nullable": true
+          }
+        },
+        "required": [
+          "nextCursor"
+        ]
+      },
+      "SdkBatchDashboardResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyDashboardDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SdkCompactCompanyDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Company display name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Company type",
+            "nullable": true
+          },
+          "website": {
+            "type": "string",
+            "description": "Company website URL",
+            "nullable": true
+          },
+          "currency": {
+            "type": "string",
+            "description": "Company reporting currency as ISO 4217 code (e.g. USD, EUR)"
+          },
+          "logoImageFileUuid": {
+            "type": "string",
+            "description": "Logo image file UUID",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "currency",
+          "logoImageFileUuid"
+        ]
+      },
+      "SdkCompaniesListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompactCompanyDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SdkCompactCompanyGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Company group identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Company group name"
+          },
+          "isDemo": {
+            "type": "boolean",
+            "description": "Whether this group holds demo data only"
+          },
+          "colorId": {
+            "type": "number",
+            "description": "UI theme color identifier",
+            "nullable": true
+          },
+          "companyIds": {
+            "description": "Company identifiers associated with the group",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "isDemo"
+        ]
+      },
+      "SdkCompanyGroupsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompactCompanyGroupDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SdkCompanyGroupBasicInformationDto": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "description": "Full legal name of the fund or group",
+            "nullable": true
+          },
+          "domicile": {
+            "type": "string",
+            "description": "Country or jurisdiction of domicile",
+            "nullable": true
+          },
+          "managementCompany": {
+            "type": "string",
+            "description": "Name of the management company",
+            "nullable": true
+          },
+          "generalPartner": {
+            "type": "string",
+            "description": "Name of the general partner",
+            "nullable": true
+          },
+          "vintageYear": {
+            "type": "number",
+            "description": "Vintage year",
+            "nullable": true
+          },
+          "fundCurrency": {
+            "type": "string",
+            "description": "Fund currency (ISO 4217 code)",
+            "nullable": true
+          },
+          "closingDates": {
+            "description": "Closing dates (ISO 8601)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "legalForm": {
+            "type": "string",
+            "description": "Legal form",
+            "nullable": true
+          },
+          "term": {
+            "type": "string",
+            "description": "Fund term",
+            "nullable": true
+          },
+          "endedness": {
+            "type": "string",
+            "description": "Fund endedness (open/closed)",
+            "nullable": true
+          }
+        }
+      },
+      "SdkCompanyGroupInvestmentFocusDto": {
+        "type": "object",
+        "properties": {
+          "investmentFocusAndPlan": {
+            "type": "string",
+            "description": "Investment focus and plan",
+            "nullable": true
+          },
+          "investmentFocusStage": {
+            "type": "string",
+            "description": "Investment stage focus",
+            "nullable": true
+          },
+          "investmentFocusGeography": {
+            "type": "string",
+            "description": "Geographic focus",
+            "nullable": true
+          },
+          "investmentFocusIndustry": {
+            "type": "string",
+            "description": "Industry focus",
+            "nullable": true
+          },
+          "maximumInvestment": {
+            "type": "string",
+            "description": "Maximum single investment",
+            "nullable": true
+          },
+          "maximumLeverage": {
+            "type": "string",
+            "description": "Maximum leverage",
+            "nullable": true
+          },
+          "investmentPeriod": {
+            "type": "string",
+            "description": "Investment period",
+            "nullable": true
+          },
+          "valuationPolicyGuidelines": {
+            "type": "string",
+            "description": "Valuation policy and guidelines",
+            "nullable": true
+          },
+          "reInvestmentPolicy": {
+            "type": "string",
+            "description": "Re-investment policy",
+            "nullable": true
+          },
+          "otherInvestmentRestrictions": {
+            "type": "string",
+            "description": "Other investment restrictions",
+            "nullable": true
+          },
+          "accountingPrinciples": {
+            "type": "string",
+            "description": "Accounting principles",
+            "nullable": true
+          }
+        }
+      },
+      "SdkCompanyGroupKeyEconomicTermsDto": {
+        "type": "object",
+        "properties": {
+          "hurdleRateAndCarry": {
+            "type": "string",
+            "description": "Hurdle rate and carry",
+            "nullable": true
+          },
+          "managementFees": {
+            "type": "string",
+            "description": "Management fees",
+            "nullable": true
+          },
+          "carriedInterest": {
+            "type": "string",
+            "description": "Carried interest",
+            "nullable": true
+          },
+          "feeOffsets": {
+            "type": "string",
+            "description": "Fee offsets",
+            "nullable": true
+          }
+        }
+      },
+      "SdkCompanyGroupAifmdDto": {
+        "type": "object",
+        "properties": {
+          "financialConductAuthority": {
+            "type": "string",
+            "description": "Financial Conduct Authority registration",
+            "nullable": true
+          },
+          "depositary": {
+            "type": "string",
+            "description": "Depositary",
+            "nullable": true
+          },
+          "countryOfRegulation": {
+            "type": "string",
+            "description": "Country of regulation",
+            "nullable": true
+          },
+          "independentRiskManager": {
+            "type": "string",
+            "description": "Independent risk manager",
+            "nullable": true
+          },
+          "independentValuer": {
+            "type": "string",
+            "description": "Independent valuer",
+            "nullable": true
+          }
+        }
+      },
+      "SdkCompanyGroupServiceProvidersDto": {
+        "type": "object",
+        "properties": {
+          "auditors": {
+            "type": "string",
+            "description": "Auditors",
+            "nullable": true
+          },
+          "administrator": {
+            "type": "string",
+            "description": "Administrator",
+            "nullable": true
+          },
+          "lawyer": {
+            "type": "string",
+            "description": "Lawyer",
+            "nullable": true
+          },
+          "bankingFacilities": {
+            "type": "string",
+            "description": "Banking facilities",
+            "nullable": true
+          },
+          "taxAndRegulatory": {
+            "type": "string",
+            "description": "Tax and regulatory advisors",
+            "nullable": true
+          },
+          "lpAdvisoryCommittee": {
+            "type": "string",
+            "description": "LP advisory committee",
+            "nullable": true
+          },
+          "membersOfLpAdvisoryCommittee": {
+            "type": "string",
+            "description": "Members of LP advisory committee",
+            "nullable": true
+          }
+        }
+      },
+      "SdkCompanyGroupDetailsDto": {
+        "type": "object",
+        "properties": {
+          "basicInformation": {
+            "$ref": "#/components/schemas/SdkCompanyGroupBasicInformationDto"
+          },
+          "investmentFocus": {
+            "$ref": "#/components/schemas/SdkCompanyGroupInvestmentFocusDto"
+          },
+          "keyEconomicTerms": {
+            "$ref": "#/components/schemas/SdkCompanyGroupKeyEconomicTermsDto"
+          },
+          "aifmd": {
+            "$ref": "#/components/schemas/SdkCompanyGroupAifmdDto"
+          },
+          "serviceProviders": {
+            "$ref": "#/components/schemas/SdkCompanyGroupServiceProvidersDto"
+          }
+        }
+      },
+      "SdkCompanyGroupDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Company group identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Company group name"
+          },
+          "isDemo": {
+            "type": "boolean",
+            "description": "Whether this group holds demo data only"
+          },
+          "colorId": {
+            "type": "number",
+            "description": "UI theme color identifier",
+            "nullable": true
+          },
+          "companyIds": {
+            "description": "Company identifiers associated with the group",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "companies": {
+            "description": "Companies associated with the group",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompactCompanyDto"
+            }
+          },
+          "details": {
+            "description": "Extended group/fund details",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupDetailsDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "isDemo"
+        ]
+      },
+      "SdkLatestMetricValueDto": {
+        "type": "object",
+        "properties": {
+          "metricTypeId": {
+            "type": "number",
+            "description": "Metric type identifier."
+          },
+          "metricTypeName": {
+            "type": "string",
+            "description": "Metric type display name."
+          },
+          "value": {
+            "type": "number",
+            "description": "Numeric value (null for option-valued metrics).",
+            "nullable": true
+          },
+          "optionValue": {
+            "type": "string",
+            "description": "String value for option-valued metrics (null for numeric metrics).",
+            "nullable": true
+          },
+          "date": {
+            "type": "string",
+            "description": "Date of the data point (ISO 8601, YYYY-MM-DD)."
+          },
+          "unit": {
+            "description": "Unit of measurement.",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkMetricUnitDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "metricTypeId",
+          "metricTypeName",
+          "date"
+        ]
+      },
+      "SdkPortfolioCompanySummaryDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier."
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier.",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group (fund) reference.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "investmentStatus": {
+            "type": "string",
+            "description": "Investment status.",
+            "nullable": true
+          },
+          "invested": {
+            "type": "number",
+            "description": "Total invested amount."
+          },
+          "fairValue": {
+            "type": "number",
+            "description": "Position fair value.",
+            "nullable": true
+          },
+          "multiple": {
+            "type": "number",
+            "description": "Investment multiple.",
+            "nullable": true
+          },
+          "roi": {
+            "type": "number",
+            "description": "Return on investment.",
+            "nullable": true
+          },
+          "xirr": {
+            "type": "number",
+            "description": "Extended internal rate of return.",
+            "nullable": true
+          },
+          "ownership": {
+            "type": "number",
+            "description": "Ownership percentage.",
+            "nullable": true
+          },
+          "realized": {
+            "type": "number",
+            "description": "Realized amount.",
+            "nullable": true
+          },
+          "latestMetrics": {
+            "description": "Latest values for the requested metric types. Each entry carries the metric type id/name, latest value, date, and unit. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway when no metric types are specified.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkLatestMetricValueDto"
+            }
+          },
+          "currency": {
+            "type": "string",
+            "description": "Reporting currency code."
+          },
+          "date": {
+            "type": "string",
+            "description": "Position summary date (ISO 8601)."
+          }
+        },
+        "required": [
+          "companyId",
+          "invested",
+          "latestMetrics",
+          "currency",
+          "date"
+        ]
+      },
+      "SdkPortfolioSummaryListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkPortfolioCompanySummaryDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SdkCompanyPositionsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyPositionDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SdkPortfolioPositionDto": {
+        "type": "object",
+        "properties": {
+          "companyIds": {
+            "description": "Company identifiers included in the aggregate",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "currency": {
+            "type": "string",
+            "description": "Reporting currency code"
+          },
+          "date": {
+            "type": "string",
+            "description": "Position summary date"
+          },
+          "fairValue": {
+            "type": "number",
+            "description": "Aggregate fair value",
+            "nullable": true
+          },
+          "invested": {
+            "type": "number",
+            "description": "Aggregate invested amount",
+            "nullable": true
+          },
+          "multiple": {
+            "type": "number",
+            "description": "Aggregate investment multiple",
+            "nullable": true
+          },
+          "ownership": {
+            "type": "number",
+            "description": "Aggregate ownership percentage",
+            "nullable": true
+          },
+          "realized": {
+            "type": "number",
+            "description": "Aggregate realized amount",
+            "nullable": true
+          },
+          "xirr": {
+            "type": "number",
+            "description": "Aggregate XIRR",
+            "nullable": true
+          },
+          "fvPlusRealized": {
+            "type": "number",
+            "description": "Fair value plus realized amount",
+            "nullable": true
+          },
+          "totalFundingRaised": {
+            "type": "number",
+            "description": "Total funding raised",
+            "nullable": true
+          },
+          "valuation": {
+            "type": "number",
+            "description": "Aggregate valuation",
+            "nullable": true
+          },
+          "investments": {
+            "type": "number",
+            "description": "Aggregate investment count",
+            "nullable": true
+          },
+          "realizations": {
+            "type": "number",
+            "description": "Aggregate realization count",
+            "nullable": true
+          },
+          "roi": {
+            "type": "number",
+            "description": "Aggregate ROI",
+            "nullable": true
+          },
+          "numberOfActiveCompanies": {
+            "type": "number",
+            "description": "Number of active companies"
+          },
+          "numberOfFullyExitedCompanies": {
+            "type": "number",
+            "description": "Number of fully exited companies"
+          },
+          "investedEquity": {
+            "type": "number",
+            "description": "Amount invested through equity instruments",
+            "nullable": true
+          },
+          "investedSAFE": {
+            "type": "number",
+            "description": "Amount invested through SAFEs",
+            "nullable": true
+          },
+          "investedConvertibleNote": {
+            "type": "number",
+            "description": "Amount invested through convertible notes",
+            "nullable": true
+          },
+          "investedInitial": {
+            "type": "number",
+            "description": "Initial invested amount",
+            "nullable": true
+          },
+          "investedFollowOn": {
+            "type": "number",
+            "description": "Follow-on invested amount",
+            "nullable": true
+          },
+          "numberOfCompanies": {
+            "type": "number",
+            "description": "Number of companies included in the aggregate"
+          },
+          "averageInvestmentAmount": {
+            "type": "number",
+            "description": "Average investment amount",
+            "nullable": true
+          }
+        },
+        "required": [
+          "currency",
+          "date",
+          "numberOfActiveCompanies",
+          "numberOfFullyExitedCompanies",
+          "numberOfCompanies"
+        ]
+      },
+      "SdkTransactionAdditionalInfoDto": {
+        "type": "object",
+        "properties": {
+          "personResponsible": {
+            "type": "string",
+            "description": "Person responsible for the transaction",
+            "nullable": true
+          },
+          "rationale": {
+            "type": "string",
+            "description": "Rationale for the transaction",
+            "nullable": true
+          },
+          "info": {
+            "type": "string",
+            "description": "Free-form note",
+            "nullable": true
+          },
+          "warrant": {
+            "type": "string",
+            "description": "Warrant information",
+            "nullable": true
+          },
+          "earnOut": {
+            "type": "string",
+            "description": "Earn-out information",
+            "nullable": true
+          }
+        }
+      },
+      "SdkEquityTransactionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Transaction identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Equity-family transaction type",
+            "enum": [
+              "EquityInvestment",
+              "EquityReceived",
+              "OptionsReceived"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "Transaction date (ISO 8601)"
+          },
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "Transaction currency as ISO 4217 code",
+            "nullable": true
+          },
+          "additionalInfo": {
+            "description": "Free-form annotations",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkTransactionAdditionalInfoDto"
+              }
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "Child transactions. Each element is a transaction variant; narrow via its `type` field.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "invested": {
+            "type": "number",
+            "description": "Cash invested (EquityInvestment only)",
+            "nullable": true
+          },
+          "pricePerShare": {
+            "type": "number",
+            "description": "Price per share",
+            "nullable": true
+          },
+          "sharesAcquired": {
+            "type": "number",
+            "description": "Shares acquired",
+            "nullable": true
+          },
+          "sharesIssuedTotalDiluted": {
+            "type": "number",
+            "description": "Total shares issued (diluted)",
+            "nullable": true
+          },
+          "sharesIssuedTotalCurrent": {
+            "type": "number",
+            "description": "Total shares issued (current)",
+            "nullable": true
+          },
+          "companyPostMoneyValuation": {
+            "type": "number",
+            "description": "Company post-money valuation",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "companyId"
+        ]
+      },
+      "SdkTransactionPaymentDto": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Payment amount"
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Due date (ISO 8601)"
+          }
+        },
+        "required": [
+          "amount",
+          "dueDate"
+        ]
+      },
+      "SdkConvertibleNoteTransactionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Transaction identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Convertible note",
+            "enum": [
+              "ConvertibleNote"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "Transaction date (ISO 8601)"
+          },
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "Transaction currency as ISO 4217 code",
+            "nullable": true
+          },
+          "additionalInfo": {
+            "description": "Free-form annotations",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkTransactionAdditionalInfoDto"
+              }
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "Child transactions. Each element is a transaction variant; narrow via its `type` field.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "invested": {
+            "type": "number",
+            "description": "Principal invested"
+          },
+          "valuationCap": {
+            "type": "number",
+            "description": "Valuation cap",
+            "nullable": true
+          },
+          "discountRate": {
+            "type": "number",
+            "description": "Conversion discount rate",
+            "nullable": true
+          },
+          "interestRate": {
+            "type": "number",
+            "description": "Annual interest rate",
+            "nullable": true
+          },
+          "interestType": {
+            "type": "string",
+            "description": "Interest calculation type",
+            "nullable": true
+          },
+          "compounded": {
+            "type": "string",
+            "description": "Compounding period",
+            "nullable": true
+          },
+          "dayCountConvention": {
+            "type": "string",
+            "description": "Day count convention",
+            "nullable": true
+          },
+          "maturityDate": {
+            "type": "string",
+            "description": "Maturity date (ISO 8601)",
+            "nullable": true
+          },
+          "warrantedOwnership": {
+            "type": "number",
+            "description": "Warranted ownership (computed: invested / valuationCap)",
+            "nullable": true
+          },
+          "payments": {
+            "description": "Scheduled payments",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkTransactionPaymentDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "companyId",
+          "invested"
+        ]
+      },
+      "SdkFutureEquityAgreementTransactionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Transaction identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Future equity agreement (SAFE)",
+            "enum": [
+              "FutureEquityAgreement"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "Transaction date (ISO 8601)"
+          },
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "Transaction currency as ISO 4217 code",
+            "nullable": true
+          },
+          "additionalInfo": {
+            "description": "Free-form annotations",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkTransactionAdditionalInfoDto"
+              }
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "Child transactions. Each element is a transaction variant; narrow via its `type` field.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "invested": {
+            "type": "number",
+            "description": "Cash invested"
+          },
+          "valuationCap": {
+            "type": "number",
+            "description": "Valuation cap",
+            "nullable": true
+          },
+          "discountRate": {
+            "type": "number",
+            "description": "Conversion discount rate",
+            "nullable": true
+          },
+          "valuationTiming": {
+            "type": "string",
+            "description": "Valuation timing (pre-money / post-money)",
+            "nullable": true
+          },
+          "companyPostMoneyValuation": {
+            "type": "number",
+            "description": "Company post-money valuation",
+            "nullable": true
+          },
+          "warrantedOwnership": {
+            "type": "number",
+            "description": "Warranted ownership (computed: invested / valuationCap)",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "companyId",
+          "invested"
+        ]
+      },
+      "SdkExtendTransactionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Transaction identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Maturity extension",
+            "enum": [
+              "Extend"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "Transaction date (ISO 8601)"
+          },
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "Transaction currency as ISO 4217 code",
+            "nullable": true
+          },
+          "additionalInfo": {
+            "description": "Free-form annotations",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkTransactionAdditionalInfoDto"
+              }
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "Child transactions. Each element is a transaction variant; narrow via its `type` field.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "parentId": {
+            "type": "number",
+            "description": "Identifier of the transaction being extended"
+          },
+          "maturityDate": {
+            "type": "string",
+            "description": "New maturity date (ISO 8601)",
+            "nullable": true
+          },
+          "transactionFairValue": {
+            "type": "number",
+            "description": "Carried fair value at extension time",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "companyId",
+          "parentId"
+        ]
+      },
+      "SdkConversionTransactionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Transaction identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Conversion-flow transaction type",
+            "enum": [
+              "ConvertToEquity",
+              "Payback",
+              "WriteOff"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "Transaction date (ISO 8601)"
+          },
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "Transaction currency as ISO 4217 code",
+            "nullable": true
+          },
+          "additionalInfo": {
+            "description": "Free-form annotations",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkTransactionAdditionalInfoDto"
+              }
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "Child transactions. Each element is a transaction variant; narrow via its `type` field.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "parentId": {
+            "type": "number",
+            "description": "Identifier of the parent transaction being converted"
+          },
+          "convertedTransactionType": {
+            "type": "string",
+            "description": "Type of the parent transaction (what was converted)",
+            "enum": [
+              "Auction",
+              "ConvertibleNote",
+              "ConvertToEquity",
+              "Dividend",
+              "EquityInvestment",
+              "EquityReceived",
+              "Extend",
+              "FutureEquityAgreement",
+              "Insolvency",
+              "IPO",
+              "LimitedAuction",
+              "OptionsReceived",
+              "OtherExit",
+              "OtherInvestment",
+              "OtherRealization",
+              "Payback",
+              "Proprietary",
+              "TradeSale",
+              "ValuationChange",
+              "WriteOff"
+            ],
+            "nullable": true
+          },
+          "amountConverted": {
+            "type": "number",
+            "description": "Amount being converted (ConvertToEquity, Payback)",
+            "nullable": true
+          },
+          "writeOffAmount": {
+            "type": "number",
+            "description": "Write-off amount (WriteOff)",
+            "nullable": true
+          },
+          "pricePerShare": {
+            "type": "number",
+            "description": "Price per share at conversion (ConvertToEquity)",
+            "nullable": true
+          },
+          "sharesAcquired": {
+            "type": "number",
+            "description": "Shares acquired on conversion (ConvertToEquity)",
+            "nullable": true
+          },
+          "payments": {
+            "description": "Scheduled repayments (Payback)",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkTransactionPaymentDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "companyId",
+          "parentId"
+        ]
+      },
+      "SdkExitTransactionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Transaction identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Exit or cash-realization transaction type",
+            "enum": [
+              "TradeSale",
+              "IPO",
+              "Auction",
+              "LimitedAuction",
+              "Proprietary",
+              "OtherExit",
+              "Dividend",
+              "OtherRealization"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "Transaction date (ISO 8601)"
+          },
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "Transaction currency as ISO 4217 code",
+            "nullable": true
+          },
+          "additionalInfo": {
+            "description": "Free-form annotations",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkTransactionAdditionalInfoDto"
+              }
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "Child transactions. Each element is a transaction variant; narrow via its `type` field.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "profit": {
+            "type": "number",
+            "description": "Realized profit / cash received",
+            "nullable": true
+          },
+          "pricePerShare": {
+            "type": "number",
+            "description": "Price per share at exit",
+            "nullable": true
+          },
+          "sharesAcquired": {
+            "type": "number",
+            "description": "Shares sold (stored as negative delta)",
+            "nullable": true
+          },
+          "companyPostMoneyValuation": {
+            "type": "number",
+            "description": "Company post-money valuation at exit",
+            "nullable": true
+          },
+          "ticker": {
+            "type": "string",
+            "description": "Ticker symbol (IPO only)",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Label describing the realization (OtherRealization only)",
+            "nullable": true
+          },
+          "payments": {
+            "description": "Exit proceeds schedule",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkTransactionPaymentDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "companyId"
+        ]
+      },
+      "SdkValuationChangeTransactionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Transaction identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Valuation change",
+            "enum": [
+              "ValuationChange"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "Transaction date (ISO 8601)"
+          },
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "Transaction currency as ISO 4217 code",
+            "nullable": true
+          },
+          "additionalInfo": {
+            "description": "Free-form annotations",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkTransactionAdditionalInfoDto"
+              }
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "Child transactions. Each element is a transaction variant; narrow via its `type` field.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "companyPostMoneyValuation": {
+            "type": "number",
+            "description": "New company post-money valuation",
+            "nullable": true
+          },
+          "pricePerShare": {
+            "type": "number",
+            "description": "Price per share at valuation",
+            "nullable": true
+          },
+          "sharesIssuedTotalDiluted": {
+            "type": "number",
+            "description": "Total shares issued (diluted)",
+            "nullable": true
+          },
+          "sharesIssuedTotalCurrent": {
+            "type": "number",
+            "description": "Total shares issued (current)",
+            "nullable": true
+          },
+          "valuationMethod": {
+            "type": "string",
+            "description": "Valuation method",
+            "enum": [
+              "Historical",
+              "NewFinancingRound",
+              "PubliclyListedSecurity",
+              "Realization",
+              "RecentTransactionMultiples",
+              "RecentMarketMultiples",
+              "RecentMarketAndTransactionMultiples",
+              "DiscountToPrimaryRound",
+              "ThirdPartyOpinion",
+              "Dcf",
+              "Other"
+            ],
+            "nullable": true
+          },
+          "customSummaryFairValue": {
+            "type": "number",
+            "description": "Override fair value applied as part of this valuation",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "companyId"
+        ]
+      },
+      "SdkInsolvencyTransactionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Transaction identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Insolvency",
+            "enum": [
+              "Insolvency"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "Transaction date (ISO 8601)"
+          },
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "Transaction currency as ISO 4217 code",
+            "nullable": true
+          },
+          "additionalInfo": {
+            "description": "Free-form annotations",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkTransactionAdditionalInfoDto"
+              }
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "Child transactions. Each element is a transaction variant; narrow via its `type` field.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "customSummaryFairValue": {
+            "type": "number",
+            "description": "Override fair value at insolvency (typically 0)",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "companyId"
+        ]
+      },
+      "SdkOtherInvestmentTransactionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Transaction identifier"
+          },
+          "type": {
+            "type": "string",
+            "description": "Other investment",
+            "enum": [
+              "OtherInvestment"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "description": "Transaction date (ISO 8601)"
+          },
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "companyGroupId": {
+            "type": "number",
+            "description": "Company group identifier",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "currency": {
+            "type": "string",
+            "description": "Transaction currency as ISO 4217 code",
+            "nullable": true
+          },
+          "additionalInfo": {
+            "description": "Free-form annotations",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkTransactionAdditionalInfoDto"
+              }
+            ]
+          },
+          "children": {
+            "type": "array",
+            "description": "Child transactions. Each element is a transaction variant; narrow via its `type` field.",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "invested": {
+            "type": "number",
+            "description": "Cash invested"
+          },
+          "name": {
+            "type": "string",
+            "description": "Label describing the investment",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "date",
+          "companyId",
+          "invested"
+        ]
+      },
+      "SdkTransactionTypeSummaryDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Transaction type.",
+            "enum": [
+              "Auction",
+              "ConvertibleNote",
+              "ConvertToEquity",
+              "Dividend",
+              "EquityInvestment",
+              "EquityReceived",
+              "Extend",
+              "FutureEquityAgreement",
+              "Insolvency",
+              "IPO",
+              "LimitedAuction",
+              "OptionsReceived",
+              "OtherExit",
+              "OtherInvestment",
+              "OtherRealization",
+              "Payback",
+              "Proprietary",
+              "TradeSale",
+              "ValuationChange",
+              "WriteOff"
+            ]
+          },
+          "count": {
+            "type": "number",
+            "description": "Number of transactions of this type."
+          },
+          "amount": {
+            "type": "number",
+            "description": "Total amount (invested or realized depending on type)."
+          }
+        },
+        "required": [
+          "type",
+          "count",
+          "amount"
+        ]
+      },
+      "SdkTransactionSummaryPeriodDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "Period bucket key. When `groupBy` is provided, the period start date (ISO 8601, YYYY-MM-DD) — e.g. `2024-01-01` for `Year`/`Quarter`/`Month` buckets. When `groupBy` is omitted, the single aggregate bucket is reported as the literal string `\"total\"`.",
+            "example": "2024-01-01"
+          },
+          "totalInvested": {
+            "type": "number",
+            "description": "Total amount invested across investment-type transactions."
+          },
+          "totalRealized": {
+            "type": "number",
+            "description": "Total amount realized across exit-type transactions."
+          },
+          "transactionCount": {
+            "type": "number",
+            "description": "Total number of transactions in this period."
+          },
+          "companyCount": {
+            "type": "number",
+            "description": "Number of distinct companies with transactions in this period."
+          },
+          "byType": {
+            "description": "Breakdown by transaction type.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkTransactionTypeSummaryDto"
+            }
+          }
+        },
+        "required": [
+          "period",
+          "totalInvested",
+          "totalRealized",
+          "transactionCount",
+          "companyCount",
+          "byType"
+        ]
+      },
+      "SdkTransactionSummaryResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkTransactionSummaryPeriodDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SdkTransactionsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkEquityTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConvertibleNoteTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkFutureEquityAgreementTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExtendTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkConversionTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkExitTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkValuationChangeTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkInsolvencyTransactionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "EquityInvestment": "#/components/schemas/SdkEquityTransactionDto",
+                  "EquityReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "OptionsReceived": "#/components/schemas/SdkEquityTransactionDto",
+                  "ConvertibleNote": "#/components/schemas/SdkConvertibleNoteTransactionDto",
+                  "FutureEquityAgreement": "#/components/schemas/SdkFutureEquityAgreementTransactionDto",
+                  "Extend": "#/components/schemas/SdkExtendTransactionDto",
+                  "ConvertToEquity": "#/components/schemas/SdkConversionTransactionDto",
+                  "Payback": "#/components/schemas/SdkConversionTransactionDto",
+                  "WriteOff": "#/components/schemas/SdkConversionTransactionDto",
+                  "TradeSale": "#/components/schemas/SdkExitTransactionDto",
+                  "IPO": "#/components/schemas/SdkExitTransactionDto",
+                  "Auction": "#/components/schemas/SdkExitTransactionDto",
+                  "LimitedAuction": "#/components/schemas/SdkExitTransactionDto",
+                  "Proprietary": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherExit": "#/components/schemas/SdkExitTransactionDto",
+                  "Dividend": "#/components/schemas/SdkExitTransactionDto",
+                  "OtherRealization": "#/components/schemas/SdkExitTransactionDto",
+                  "ValuationChange": "#/components/schemas/SdkValuationChangeTransactionDto",
+                  "Insolvency": "#/components/schemas/SdkInsolvencyTransactionDto",
+                  "OtherInvestment": "#/components/schemas/SdkOtherInvestmentTransactionDto"
+                }
+              }
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SdkMetricTypesListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricTypeDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "MetricSearchDto": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          },
+          "companyIds": {
+            "description": "Restrict results to these companies. Defaults to all companies the caller can access.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "companyNameSearch": {
+            "description": "Resolve companies by case-insensitive substring match on their display name. Pass an array to resolve multiple companies in one call — a company matches if its name contains ANY of the listed substrings (OR semantics). A single string is also accepted and treated as a one-element array. Intersects with `companyIds`/`companyGroupIds`. Lets the agent skip a separate /companies lookup when it only knows names.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "companyGroupIds": {
+            "description": "Restrict to companies that belong to any of these company groups.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "metricTypeIds": {
+            "description": "Restrict to specific metric types (use GET /metrics/types to discover identifiers).",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "metricTypeNames": {
+            "description": "Resolve metric types by case-insensitive exact match on their display name and intersect with `metricTypeIds`. Lets the agent fetch by metric name (e.g. \"Revenue\") without first listing /metrics/types.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "Restrict to a reporting period granularity.",
+            "enum": [
+              "Month",
+              "Quarter",
+              "Year"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "description": "Lower bound for point date (ISO 8601, inclusive)."
+          },
+          "to": {
+            "type": "string",
+            "description": "Upper bound for point date (ISO 8601, inclusive)."
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code (e.g. USD, EUR). When set, monetary metrics are FX-converted to this currency and the metric type unit reports the target currency. Non-monetary metrics are unaffected."
+          },
+          "conversionStrategy": {
+            "type": "string",
+            "description": "FX rate selection when `currency` is set. `LATEST_FX_RATE` (default) uses the most recent rate; `ENTITY_DATE_RATE` uses the rate on each point's date. Ignored when `currency` is omitted.",
+            "enum": [
+              "LATEST_FX_RATE",
+              "ENTITY_DATE_RATE"
+            ]
+          }
+        }
+      },
+      "SdkCompanyMetricsDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier."
+          },
+          "company": {
+            "description": "Company reference with id and human-readable name.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "metrics": {
+            "description": "Metrics reported for this company.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyMetricDto"
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "company",
+          "metrics"
+        ]
+      },
+      "SdkCompanyMetricsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyMetricsDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "MetricCompareDto": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          },
+          "metricTypeIds": {
+            "description": "Metric type identifiers to compare (resolve names to ids via /metrics/types). When multiple ids are provided, the response contains one entry per metric type.",
+            "example": [
+              1,
+              7
+            ],
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "companyIds": {
+            "description": "Restrict to these company identifiers.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "companyNameSearch": {
+            "description": "Case-insensitive substring match on company display name. Pass an array to compare multiple companies in one call — a company matches if its name contains ANY of the listed substrings (OR semantics). A single string is also accepted and treated as a one-element array. Intersects with `companyIds`/`companyGroupIds`.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "companyGroupIds": {
+            "description": "Restrict to companies that belong to any of these company groups.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "Restrict to a reporting period granularity.",
+            "enum": [
+              "Month",
+              "Quarter",
+              "Year"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "description": "Lower bound for point date (ISO 8601, inclusive)."
+          },
+          "to": {
+            "type": "string",
+            "description": "Upper bound for point date (ISO 8601, inclusive)."
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code. When set, monetary metrics are FX-converted to this target currency."
+          },
+          "conversionStrategy": {
+            "type": "string",
+            "description": "FX rate selection when `currency` is set. `LATEST_FX_RATE` (default) uses the most recent rate; `ENTITY_DATE_RATE` uses the rate on each point's date.",
+            "enum": [
+              "LATEST_FX_RATE",
+              "ENTITY_DATE_RATE"
+            ]
+          },
+          "includeChange": {
+            "type": "boolean",
+            "description": "Include period-over-period percentage change for each value.",
+            "default": false
+          }
+        },
+        "required": [
+          "metricTypeIds"
+        ]
+      },
+      "SdkMetricTypeReferenceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Metric type identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "Metric type display name."
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "SdkMetricCompareValueDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "number",
+            "description": "Company identifier."
+          },
+          "value": {
+            "type": "number",
+            "description": "Numeric value.",
+            "nullable": true
+          },
+          "optionValue": {
+            "type": "string",
+            "description": "Option value for non-numeric metrics.",
+            "nullable": true
+          },
+          "change": {
+            "type": "number",
+            "description": "Period-over-period change as a decimal (e.g. 0.15 = +15%). Only present when `includeChange` is true.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "companyId"
+        ]
+      },
+      "SdkMetricCompareRowDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Period date (ISO 8601, YYYY-MM-DD)."
+          },
+          "timeframe": {
+            "type": "object",
+            "description": "Reporting period granularity."
+          },
+          "values": {
+            "description": "One entry per company with the metric value for this period.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricCompareValueDto"
+            }
+          }
+        },
+        "required": [
+          "date",
+          "timeframe",
+          "values"
+        ]
+      },
+      "SdkMetricCompareResponseDto": {
+        "type": "object",
+        "properties": {
+          "metricType": {
+            "description": "The metric type being compared.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkMetricTypeReferenceDto"
+              }
+            ]
+          },
+          "unit": {
+            "description": "Unit of measurement (with currency code resolved when FX-converted).",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkMetricUnitDto"
+              }
+            ]
+          },
+          "companies": {
+            "description": "Companies included in the comparison.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+            }
+          },
+          "rows": {
+            "description": "Date-aligned rows. Each row contains one value per company for a given period.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricCompareRowDto"
+            }
+          }
+        },
+        "required": [
+          "metricType",
+          "companies",
+          "rows"
+        ]
+      },
+      "SdkMetricCompareMultiResponseDto": {
+        "type": "object",
+        "properties": {
+          "comparisons": {
+            "description": "One comparison result per requested metric type.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricCompareResponseDto"
+            }
+          }
+        },
+        "required": [
+          "comparisons"
+        ]
+      },
+      "MetricAggregateDto": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "number",
+            "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          },
+          "cursor": {
+            "type": "string",
+            "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          },
+          "metricTypeIds": {
+            "description": "Metric type identifiers to aggregate. Resolve names to ids via /metrics/types.",
+            "example": [
+              1,
+              7
+            ],
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "aggregation": {
+            "type": "string",
+            "description": "Aggregation function to apply across companies for each period.",
+            "enum": [
+              "SUM",
+              "AVG",
+              "MEDIAN",
+              "MIN",
+              "MAX",
+              "COUNT"
+            ]
+          },
+          "companyIds": {
+            "description": "Restrict to these company identifiers.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "companyGroupIds": {
+            "description": "Restrict to companies that belong to any of these company groups.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "timeframe": {
+            "type": "string",
+            "description": "Restrict to a reporting period granularity.",
+            "enum": [
+              "Month",
+              "Quarter",
+              "Year"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "description": "Lower bound for point date (ISO 8601, inclusive)."
+          },
+          "to": {
+            "type": "string",
+            "description": "Upper bound for point date (ISO 8601, inclusive)."
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code. When set, monetary metrics are FX-converted to this target currency."
+          },
+          "conversionStrategy": {
+            "type": "string",
+            "description": "FX rate selection when `currency` is set. `LATEST_FX_RATE` (default) uses the most recent rate; `ENTITY_DATE_RATE` uses the rate on each point's date.",
+            "enum": [
+              "LATEST_FX_RATE",
+              "ENTITY_DATE_RATE"
+            ]
+          },
+          "groupByCompanyGroup": {
+            "type": "boolean",
+            "description": "When true, results are grouped by company group. Each metric type produces one entry per company group.",
+            "default": false
+          }
+        },
+        "required": [
+          "metricTypeIds",
+          "aggregation"
+        ]
+      },
+      "SdkAggregatedPointDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Period date (ISO 8601, YYYY-MM-DD)."
+          },
+          "timeframe": {
+            "type": "object",
+            "description": "Reporting period granularity."
+          },
+          "value": {
+            "type": "number",
+            "description": "Aggregated value for the period. Null when the metric type does not enable the requested aggregation (SUM/AVG/MEDIAN are gated by the metric type configuration; MIN/MAX/COUNT are always available).",
+            "nullable": true
+          },
+          "companyCount": {
+            "type": "number",
+            "description": "Number of companies that contributed a data point for this period."
+          }
+        },
+        "required": [
+          "date",
+          "timeframe",
+          "value",
+          "companyCount"
+        ]
+      },
+      "SdkAggregatedMetricDto": {
+        "type": "object",
+        "properties": {
+          "metricType": {
+            "description": "Metric type reference.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkMetricTypeReferenceDto"
+              }
+            ]
+          },
+          "unit": {
+            "description": "Unit of measurement (with currency code resolved when FX-converted).",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkMetricUnitDto"
+              }
+            ]
+          },
+          "aggregation": {
+            "type": "string",
+            "description": "Aggregation function applied.",
+            "enum": [
+              "SUM",
+              "AVG",
+              "MEDIAN",
+              "MIN",
+              "MAX",
+              "COUNT"
+            ]
+          },
+          "companyGroup": {
+            "description": "Company group reference when `groupByCompanyGroup` is true.",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyGroupReferenceDto"
+              }
+            ]
+          },
+          "points": {
+            "description": "Aggregated data points ordered by date ascending.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkAggregatedPointDto"
+            }
+          }
+        },
+        "required": [
+          "metricType",
+          "aggregation",
+          "points"
+        ]
+      },
+      "SdkMetricAggregateResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkAggregatedMetricDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SdkCompanyReportsListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyReportSummaryDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SdkUserReferenceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "User identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "User display name (first + last name)."
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "SdkCompanyReportAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Attachment identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "Original file name."
+          },
+          "url": {
+            "type": "string",
+            "description": "Pre-signed URL for download (time-limited).",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "SdkCompanyReportSectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Section identifier."
+          },
+          "type": {
+            "type": "object",
+            "description": "Section type."
+          },
+          "order": {
+            "type": "number",
+            "description": "Position of the section within the report (0-based)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title."
+          },
+          "content": {
+            "type": "string",
+            "description": "Section body. Plain text for Text sections, Markdown for Markdown sections.",
+            "nullable": true
+          },
+          "file": {
+            "description": "Attached file for File-typed sections.",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReportAttachmentDto"
+              }
+            ]
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Embedded image URL for Image sections (pre-signed, time-limited).",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "order",
+          "title"
+        ]
+      },
+      "SdkCompanyReportDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Report identifier."
+          },
+          "title": {
+            "type": "string",
+            "description": "Human-readable report title."
+          },
+          "date": {
+            "type": "string",
+            "description": "Reporting period end date (ISO 8601, YYYY-MM-DD)."
+          },
+          "timeframe": {
+            "type": "object",
+            "description": "Reporting period granularity."
+          },
+          "publishedAt": {
+            "type": "string",
+            "description": "When the report was published (ISO 8601).",
+            "nullable": true
+          },
+          "company": {
+            "description": "Company that published the report.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+              }
+            ]
+          },
+          "createdBy": {
+            "description": "Author of the report.",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkUserReferenceDto"
+              }
+            ]
+          },
+          "sections": {
+            "description": "Structured sections that compose the report body.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyReportSectionDto"
+            }
+          },
+          "attachments": {
+            "description": "Files attached at the report level (not inside a specific section).",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyReportAttachmentDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "date",
+          "timeframe",
+          "company",
+          "sections",
+          "attachments"
+        ]
+      }
+    }
+  }
+}
