@@ -1454,7 +1454,7 @@
   },
   "info": {
     "title": "SDK API",
-    "description": "SDK API documentation for embedded and API key clients",
+    "description": "SDK API documentation for embedded and API key clients.\n\n**Terminology note:** Throughout this API, \"funds\" and \"company groups\" refer to the same concept — an investment vehicle (fund, SPV, or similar) that holds positions in portfolio companies. The internal data model uses the term `companyGroup` / `companyGroupId` in all parameter and field names; the human-readable descriptions use \"fund\" for clarity.",
     "version": "v2",
     "contact": {}
   },
