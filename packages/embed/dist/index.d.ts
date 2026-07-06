@@ -359,7 +359,7 @@ export interface SdkCompanyReportSummaryDto {
   title: string
   date: string
   timeframe: {  }
-  publishedAt?: string | null
+  publishedAt: string | null
   company: SdkCompanyReferenceDto
 }
 
@@ -698,20 +698,55 @@ export interface SdkUserReferenceDto {
   name: string
 }
 
+export type SdkReportSectionType = "text"
+
+export interface SdkTextReportSectionDto {
+  id: number
+  type: SdkReportSectionType
+  order: number
+  title: string
+  content: string | null
+}
+
+export interface SdkMarkdownReportSectionDto {
+  id: number
+  type: SdkReportSectionType
+  order: number
+  title: string
+  content: string | null
+}
+
 export interface SdkCompanyReportAttachmentDto {
   id: number
   name: string
-  url?: string | null
+  url: string | null
 }
 
-export interface SdkCompanyReportSectionDto {
+export interface SdkImageReportSectionDto {
   id: number
-  type: {  }
+  type: SdkReportSectionType
   order: number
   title: string
-  content?: string | null
-  file?: SdkCompanyReportAttachmentDto
-  imageUrl?: string | null
+  imageUrl: string | null
+  file: SdkCompanyReportAttachmentDto
+}
+
+export interface SdkSingleChoiceReportSectionDto {
+  id: number
+  type: SdkReportSectionType
+  order: number
+  title: string
+  options: string[]
+  selectedOptions: string[]
+}
+
+export interface SdkMultiChoiceReportSectionDto {
+  id: number
+  type: SdkReportSectionType
+  order: number
+  title: string
+  options: string[]
+  selectedOptions: string[]
 }
 
 export interface SdkCompanyReportDto {
@@ -719,10 +754,10 @@ export interface SdkCompanyReportDto {
   title: string
   date: string
   timeframe: {  }
-  publishedAt?: string | null
+  publishedAt: string | null
   company: SdkCompanyReferenceDto
-  createdBy?: SdkUserReferenceDto
-  sections: SdkCompanyReportSectionDto[]
+  createdBy: SdkUserReferenceDto
+  sections: (SdkTextReportSectionDto | SdkMarkdownReportSectionDto | SdkImageReportSectionDto | SdkSingleChoiceReportSectionDto | SdkMultiChoiceReportSectionDto)[]
   attachments: SdkCompanyReportAttachmentDto[]
 }
 

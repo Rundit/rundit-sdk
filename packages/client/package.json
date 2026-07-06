@@ -1,6 +1,6 @@
 {
   "name": "@rundit-sdk/client",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Rundit client SDK for third-party integrations authenticated with a Rundit API key.",
   "repository": {
     "type": "git",

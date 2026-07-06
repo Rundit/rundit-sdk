@@ -2392,6 +2392,7 @@
           "title",
           "date",
           "timeframe",
+          "publishedAt",
           "company"
         ]
       },
@@ -5386,6 +5387,252 @@
           "meta"
         ]
       },
+      "SdkReportSectionType": {
+        "type": "string",
+        "enum": [
+          "text"
+        ],
+        "description": "Plain-text section."
+      },
+      "SdkTextReportSectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Section identifier."
+          },
+          "type": {
+            "description": "Plain-text section.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkReportSectionType"
+              }
+            ]
+          },
+          "order": {
+            "type": "number",
+            "description": "Position of the section within the report (0-based)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title."
+          },
+          "content": {
+            "type": "string",
+            "description": "Plain-text body.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "order",
+          "title",
+          "content"
+        ]
+      },
+      "SdkMarkdownReportSectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Section identifier."
+          },
+          "type": {
+            "description": "Markdown section.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkReportSectionType"
+              }
+            ]
+          },
+          "order": {
+            "type": "number",
+            "description": "Position of the section within the report (0-based)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title."
+          },
+          "content": {
+            "type": "string",
+            "description": "Markdown body.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "order",
+          "title",
+          "content"
+        ]
+      },
+      "SdkCompanyReportAttachmentDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Attachment identifier."
+          },
+          "name": {
+            "type": "string",
+            "description": "Original file name."
+          },
+          "url": {
+            "type": "string",
+            "description": "Pre-signed URL for download (time-limited).",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "url"
+        ]
+      },
+      "SdkImageReportSectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Section identifier."
+          },
+          "type": {
+            "description": "Image section.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkReportSectionType"
+              }
+            ]
+          },
+          "order": {
+            "type": "number",
+            "description": "Position of the section within the report (0-based)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title."
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "Pre-signed, time-limited link to the image.",
+            "nullable": true
+          },
+          "file": {
+            "description": "The underlying uploaded image file.",
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCompanyReportAttachmentDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "order",
+          "title",
+          "imageUrl",
+          "file"
+        ]
+      },
+      "SdkSingleChoiceReportSectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Section identifier."
+          },
+          "type": {
+            "description": "Single-choice section.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkReportSectionType"
+              }
+            ]
+          },
+          "order": {
+            "type": "number",
+            "description": "Position of the section within the report (0-based)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title."
+          },
+          "options": {
+            "description": "All selectable option labels, in human-readable form.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "selectedOptions": {
+            "description": "The selected option label(s), in human-readable form.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "order",
+          "title",
+          "options",
+          "selectedOptions"
+        ]
+      },
+      "SdkMultiChoiceReportSectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Section identifier."
+          },
+          "type": {
+            "description": "Multi-choice section.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkReportSectionType"
+              }
+            ]
+          },
+          "order": {
+            "type": "number",
+            "description": "Position of the section within the report (0-based)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title."
+          },
+          "options": {
+            "description": "All selectable option labels, in human-readable form.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "selectedOptions": {
+            "description": "The selected option label(s), in human-readable form.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "order",
+          "title",
+          "options",
+          "selectedOptions"
+        ]
+      },
       "SdkCompanyReportsListResponseDto": {
         "type": "object",
         "properties": {
@@ -5419,75 +5666,6 @@
         "required": [
           "id",
           "name"
-        ]
-      },
-      "SdkCompanyReportAttachmentDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "number",
-            "description": "Attachment identifier."
-          },
-          "name": {
-            "type": "string",
-            "description": "Original file name."
-          },
-          "url": {
-            "type": "string",
-            "description": "Pre-signed URL for download (time-limited).",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "name"
-        ]
-      },
-      "SdkCompanyReportSectionDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "number",
-            "description": "Section identifier."
-          },
-          "type": {
-            "type": "object",
-            "description": "Section type."
-          },
-          "order": {
-            "type": "number",
-            "description": "Position of the section within the report (0-based)."
-          },
-          "title": {
-            "type": "string",
-            "description": "Section title."
-          },
-          "content": {
-            "type": "string",
-            "description": "Section body. Plain text for Text sections, Markdown for Markdown sections.",
-            "nullable": true
-          },
-          "file": {
-            "description": "Attached file for File-typed sections.",
-            "nullable": true,
-            "type": "object",
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/SdkCompanyReportAttachmentDto"
-              }
-            ]
-          },
-          "imageUrl": {
-            "type": "string",
-            "description": "Embedded image URL for Image sections (pre-signed, time-limited).",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "order",
-          "title"
         ]
       },
       "SdkCompanyReportDto": {
@@ -5533,10 +5711,36 @@
             ]
           },
           "sections": {
-            "description": "Structured sections that compose the report body.",
             "type": "array",
+            "description": "Structured sections that compose the report body. Each element is a section variant; narrow via its `type` field.",
             "items": {
-              "$ref": "#/components/schemas/SdkCompanyReportSectionDto"
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/SdkTextReportSectionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkMarkdownReportSectionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkImageReportSectionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkSingleChoiceReportSectionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkMultiChoiceReportSectionDto"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "type",
+                "mapping": {
+                  "text": "#/components/schemas/SdkTextReportSectionDto",
+                  "markdown": "#/components/schemas/SdkMarkdownReportSectionDto",
+                  "image": "#/components/schemas/SdkImageReportSectionDto",
+                  "single-choice": "#/components/schemas/SdkSingleChoiceReportSectionDto",
+                  "multi-choice": "#/components/schemas/SdkMultiChoiceReportSectionDto"
+                }
+              }
             }
           },
           "attachments": {
@@ -5552,7 +5756,9 @@
           "title",
           "date",
           "timeframe",
+          "publishedAt",
           "company",
+          "createdBy",
           "sections",
           "attachments"
         ]
