@@ -1977,6 +1977,11 @@
             "description": "Investment multiple",
             "nullable": true
           },
+          "realizedMultiple": {
+            "type": "number",
+            "description": "Realized MOIC (realized over invested); null until some cash has been realized",
+            "nullable": true
+          },
           "roundInfo": {
             "description": "Funding round info",
             "nullable": true,
@@ -3119,6 +3124,11 @@
           "multiple": {
             "type": "number",
             "description": "Aggregate investment multiple",
+            "nullable": true
+          },
+          "realizedMultiple": {
+            "type": "number",
+            "description": "Aggregate realized MOIC (realized over invested in companies with positive realized cash)",
             "nullable": true
           },
           "ownership": {
