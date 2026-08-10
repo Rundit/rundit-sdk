@@ -5549,6 +5549,78 @@
           "file"
         ]
       },
+      "SdkChartReportSectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Section identifier."
+          },
+          "type": {
+            "description": "Dynamically rendered chart section.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkReportSectionType"
+              }
+            ]
+          },
+          "order": {
+            "type": "number",
+            "description": "Position of the section within the report (0-based)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title."
+          },
+          "content": {
+            "type": "object",
+            "description": "Versioned, materialized chart data and display configuration."
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "order",
+          "title",
+          "content"
+        ]
+      },
+      "SdkTableReportSectionDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Section identifier."
+          },
+          "type": {
+            "description": "Dynamically rendered table section.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkReportSectionType"
+              }
+            ]
+          },
+          "order": {
+            "type": "number",
+            "description": "Position of the section within the report (0-based)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Section title."
+          },
+          "content": {
+            "type": "object",
+            "description": "Versioned, materialized table data."
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "order",
+          "title",
+          "content"
+        ]
+      },
       "SdkSingleChoiceReportSectionDto": {
         "type": "object",
         "properties": {
@@ -5735,6 +5807,12 @@
                   "$ref": "#/components/schemas/SdkImageReportSectionDto"
                 },
                 {
+                  "$ref": "#/components/schemas/SdkChartReportSectionDto"
+                },
+                {
+                  "$ref": "#/components/schemas/SdkTableReportSectionDto"
+                },
+                {
                   "$ref": "#/components/schemas/SdkSingleChoiceReportSectionDto"
                 },
                 {
@@ -5747,6 +5825,8 @@
                   "text": "#/components/schemas/SdkTextReportSectionDto",
                   "markdown": "#/components/schemas/SdkMarkdownReportSectionDto",
                   "image": "#/components/schemas/SdkImageReportSectionDto",
+                  "chart": "#/components/schemas/SdkChartReportSectionDto",
+                  "table": "#/components/schemas/SdkTableReportSectionDto",
                   "single-choice": "#/components/schemas/SdkSingleChoiceReportSectionDto",
                   "multi-choice": "#/components/schemas/SdkMultiChoiceReportSectionDto"
                 }
