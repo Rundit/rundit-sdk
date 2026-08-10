@@ -107,6 +107,7 @@ export interface SdkCompanyPositionDto {
   exitProfits?: number | null
   equityFairValue?: number | null
   multiple?: number | null
+  realizedMultiple?: number | null
   roundInfo?: SdkFundingRoundInfoDto
   valuationMethod?: "Historical" | "NewFinancingRound" | "PubliclyListedSecurity" | "Realization" | "RecentTransactionMultiples" | "RecentMarketMultiples" | "RecentMarketAndTransactionMultiples" | "DiscountToPrimaryRound" | "ThirdPartyOpinion" | "Dcf" | "Other"
   totalFundingRaised?: number | null
@@ -533,6 +534,7 @@ export interface SdkPortfolioPositionDto {
   fairValue?: number | null
   invested?: number | null
   multiple?: number | null
+  realizedMultiple?: number | null
   ownership?: number | null
   realized?: number | null
   xirr?: number | null
@@ -731,6 +733,22 @@ export interface SdkImageReportSectionDto {
   file: SdkCompanyReportAttachmentDto
 }
 
+export interface SdkChartReportSectionDto {
+  id: number
+  type: SdkReportSectionType
+  order: number
+  title: string
+  content: {  }
+}
+
+export interface SdkTableReportSectionDto {
+  id: number
+  type: SdkReportSectionType
+  order: number
+  title: string
+  content: {  }
+}
+
 export interface SdkSingleChoiceReportSectionDto {
   id: number
   type: SdkReportSectionType
@@ -757,7 +775,7 @@ export interface SdkCompanyReportDto {
   publishedAt: string | null
   company: SdkCompanyReferenceDto
   createdBy: SdkUserReferenceDto
-  sections: (SdkTextReportSectionDto | SdkMarkdownReportSectionDto | SdkImageReportSectionDto | SdkSingleChoiceReportSectionDto | SdkMultiChoiceReportSectionDto)[]
+  sections: (SdkTextReportSectionDto | SdkMarkdownReportSectionDto | SdkImageReportSectionDto | SdkChartReportSectionDto | SdkTableReportSectionDto | SdkSingleChoiceReportSectionDto | SdkMultiChoiceReportSectionDto)[]
   attachments: SdkCompanyReportAttachmentDto[]
 }
 
