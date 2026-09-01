@@ -4,7 +4,7 @@ const routeManifest = {
       "method": "POST",
       "path": "/companies/dashboards",
       "summary": "PREFERRED tool for multi-company analysis — full dashboards for many companies in one call",
-      "description": "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively).",
+      "description": "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively). Dashboards come back in the order the `companyIds` were requested, so `limit`/`cursor` paging is stable.",
       "exampleCall": "client.companies.getDashboards({ companyIds: [123], currency: 'USD' })",
       "responseType": "CompaniesGetDashboardsResponse",
       "pathParams": [],
@@ -71,7 +71,7 @@ const routeManifest = {
       "method": "GET",
       "path": "/companies",
       "summary": "List companies available to the SDK consumer",
-      "description": "Returns the compact form (id, name, currency, type, website, logo) for every company the caller can read. Filter by `companyIds`, `companyGroupIds`, and/or `nameSearch` (case-insensitive substring on display name; accepts an array to resolve multiple companies at once with OR semantics — e.g. `nameSearch=[\"acme\",\"beta\",\"gamma\"]` returns any company whose name contains any of the three substrings). Avoids listing the full portfolio when the agent only knows companies by name.",
+      "description": "Returns the compact form (id, name, currency, type, website, logo) for every company the caller can read. Filter by `companyIds`, `companyGroupIds`, and/or `nameSearch` (case-insensitive substring on display name; accepts an array to resolve multiple companies at once with OR semantics — e.g. `nameSearch=[\"acme\",\"beta\",\"gamma\"]` returns any company whose name contains any of the three substrings). Avoids listing the full portfolio when the agent only knows companies by name. Ordered by company id ascending.",
       "exampleCall": "client.companies.getAll({ limit: 123 })",
       "responseType": "CompaniesGetAllResponse",
       "pathParams": [],
@@ -80,13 +80,13 @@ const routeManifest = {
           "name": "limit",
           "required": false,
           "type": "number",
-          "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested."
         },
         {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyIds",
@@ -114,7 +114,7 @@ const routeManifest = {
       "method": "GET",
       "path": "/company-groups",
       "summary": "List funds available to the SDK consumer",
-      "description": "Returns compact fund metadata (id, name, demo flag, color, member company ids). Filter by `companyGroupIds` and/or `nameSearch` (case-insensitive substring on name; accepts an array to resolve multiple groups in one call with OR semantics — e.g. `nameSearch=[\"fund i\",\"fund ii\"]`).",
+      "description": "Returns compact fund metadata (id, name, demo flag, color, member company ids). Filter by `companyGroupIds` and/or `nameSearch` (case-insensitive substring on name; accepts an array to resolve multiple groups in one call with OR semantics — e.g. `nameSearch=[\"fund i\",\"fund ii\"]`). Ordered by fund id ascending.",
       "exampleCall": "client.companyGroups.getAll({ limit: 123 })",
       "responseType": "CompanyGroupsGetAllResponse",
       "pathParams": [],
@@ -123,13 +123,13 @@ const routeManifest = {
           "name": "limit",
           "required": false,
           "type": "number",
-          "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested."
         },
         {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -167,7 +167,7 @@ const routeManifest = {
       "method": "GET",
       "path": "/positions/portfolio/summary",
       "summary": "Get portfolio summary with positions and key metrics per company",
-      "description": "Returns one row per company with position data (invested, fair value, multiple, ROI) and latest values for selected metrics. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway. Override with `metricTypeNames`. Designed for portfolio overview tables.",
+      "description": "Returns one row per company *per fund* — a company held by two funds appears twice, distinguished by `companyGroupId` — with position data (invested, fair value, multiple, ROI) and latest values for selected metrics. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway. Override with `metricTypeNames`. Designed for portfolio overview tables. Ordered by company id, then fund id.",
       "exampleCall": "client.positions.getPortfolioSummary({ currency: 'USD' })",
       "responseType": "PositionsGetPortfolioSummaryResponse",
       "pathParams": [],
@@ -176,13 +176,13 @@ const routeManifest = {
           "name": "limit",
           "required": false,
           "type": "number",
-          "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested."
         },
         {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -220,7 +220,7 @@ const routeManifest = {
       "method": "GET",
       "path": "/positions/companies/:id",
       "summary": "Get positions for one company",
-      "description": "Returns all fund-level positions for a single company — one entry per fund (`companyGroupId`) that holds a position in the company. Each entry carries invested amount, fair market value, ownership percentage, share counts, multiple, and ROI, all FX-converted to `currency` (ISO 4217, required). Filter by `companyGroupIds` to scope to specific funds. Use `date` (ISO 8601) for a historical snapshot; omit to use the latest available data.",
+      "description": "Returns all fund-level positions for a single company — one entry per fund (`companyGroupId`) that holds a position in the company. Each entry carries invested amount, fair market value, ownership percentage, share counts, multiple, and ROI, all FX-converted to `currency` (ISO 4217, required). Filter by `companyGroupIds` to scope to specific funds. Use `date` (ISO 8601) for a historical snapshot; omit to use the latest available data. Ordered by fund id ascending.",
       "exampleCall": "client.positions.getCompanyPositions(123, { currency: 'USD' })",
       "responseType": "PositionsGetCompanyPositionsResponse",
       "pathParams": [
@@ -235,13 +235,13 @@ const routeManifest = {
           "name": "limit",
           "required": false,
           "type": "number",
-          "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested."
         },
         {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -304,7 +304,7 @@ const routeManifest = {
       "method": "GET",
       "path": "/transactions/summary",
       "summary": "Get transaction activity summary",
-      "description": "Returns aggregated transaction statistics: total invested, total realized, transaction count, company count, and breakdown by transaction type. Optionally group by period (Month, Quarter, Year). Filter by company, fund (`companyGroupIds`), and date range.",
+      "description": "Returns aggregated transaction statistics: total invested, total realized, transaction count, company count, and breakdown by transaction type. Optionally group by period (Month, Quarter, Year). Filter by company, fund (`companyGroupIds`), and date range. Ordered by period ascending.",
       "exampleCall": "client.transactions.getSummary({ currency: 'USD' })",
       "responseType": "TransactionsGetSummaryResponse",
       "pathParams": [],
@@ -313,13 +313,13 @@ const routeManifest = {
           "name": "limit",
           "required": false,
           "type": "number",
-          "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested."
         },
         {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -363,7 +363,7 @@ const routeManifest = {
       "method": "GET",
       "path": "/transactions/companies/:id",
       "summary": "Get transactions for one company",
-      "description": "Returns all transactions for a single company, ordered by date descending. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyGroupIds` to scope to a specific fund, `types` to limit to specific transaction kinds, and `priorTo` (ISO 8601) for a historical snapshot. Requires transaction read access on the company.",
+      "description": "Returns all transactions for a single company, ordered by date descending then id descending. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyGroupIds` to scope to a specific fund, `types` to limit to specific transaction kinds, and `priorTo` (ISO 8601) for a historical snapshot. Requires transaction read access on the company.",
       "exampleCall": "client.transactions.getCompanyTransactions(123, { limit: 123 })",
       "responseType": "TransactionsGetCompanyTransactionsResponse",
       "pathParams": [
@@ -378,13 +378,13 @@ const routeManifest = {
           "name": "limit",
           "required": false,
           "type": "number",
-          "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested."
         },
         {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -410,7 +410,7 @@ const routeManifest = {
       "method": "GET",
       "path": "/transactions",
       "summary": "Get transactions for multiple companies",
-      "description": "Returns transactions across multiple companies. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyIds`, `companyGroupIds`, `types`, and `priorTo` (ISO 8601 upper-bound date for a historical snapshot). When `companyIds` is provided, the caller must have transaction read access on every listed company.",
+      "description": "Returns transactions across multiple companies. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyIds`, `companyGroupIds`, `types`, and `priorTo` (ISO 8601 upper-bound date for a historical snapshot). When `companyIds` is provided, the caller must have transaction read access on every listed company. Ordered by date descending, then id descending.",
       "exampleCall": "client.transactions.getTransactions({ limit: 123 })",
       "responseType": "TransactionsGetTransactionsResponse",
       "pathParams": [],
@@ -419,13 +419,13 @@ const routeManifest = {
           "name": "limit",
           "required": false,
           "type": "number",
-          "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested."
         },
         {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -459,17 +459,30 @@ const routeManifest = {
       "method": "GET",
       "path": "/metrics/types",
       "summary": "List metric types available to the SDK consumer",
-      "description": "Returns predefined metric types plus user-defined metric types scoped to the caller — VC group custom types for VC users, company custom types for company users. Each entry carries the metric shape needed to interpret values: `valueType` is `\"numeric\"` (read `point.value` as a number; may carry `rangeConfig` with min/max/step for ranged metrics) or `\"option\"` (read `point.optionValue` as a string from `optionConfig.options[]` — this is how boolean / yes-no metrics are encoded, as two options typically labelled \"Yes\"/\"No\"). `unit.unit` describes the measurement (`Currency`, `Percentage`, `Number`, time units, ...); `unit.currencyCode` is intentionally null on this endpoint because monetary types resolve their concrete currency per company — call /metrics to receive `unit.currencyCode` populated with each company's native currency, or pass `currency` to convert all monetary metrics to a chosen target.",
-      "exampleCall": "client.metrics.getTypes()",
+      "description": "Returns predefined metric types plus user-defined metric types scoped to the caller — VC group custom types for VC users, company custom types for company users. Each entry carries the metric shape needed to interpret values: `valueType` is `\"numeric\"` (read `point.value` as a number; may carry `rangeConfig` with min/max/step for ranged metrics) or `\"option\"` (read `point.optionValue` as a string from `optionConfig.options[]` — this is how boolean / yes-no metrics are encoded, as two options typically labelled \"Yes\"/\"No\"). `unit.unit` describes the measurement (`Currency`, `Percentage`, `Number`, time units, ...); `unit.currencyCode` is intentionally null on this endpoint because monetary types resolve their concrete currency per company — call /metrics to receive `unit.currencyCode` populated with each company's native currency, or pass `currency` to convert all monetary metrics to a chosen target. Ordered by metric type id ascending.",
+      "exampleCall": "client.metrics.getTypes({ limit: 123 })",
       "responseType": "MetricsGetTypesResponse",
       "pathParams": [],
-      "queryParams": []
+      "queryParams": [
+        {
+          "name": "limit",
+          "required": false,
+          "type": "number",
+          "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested."
+        },
+        {
+          "name": "cursor",
+          "required": false,
+          "type": "string",
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+        }
+      ]
     },
     "search": {
       "method": "POST",
       "path": "/metrics",
       "summary": "Read metric values for accessible companies, grouped by company",
-      "description": "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately.",
+      "description": "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.",
       "exampleCall": "client.metrics.search({})",
       "responseType": "MetricsSearchResponse",
       "pathParams": [],
@@ -489,7 +502,7 @@ const routeManifest = {
       "method": "POST",
       "path": "/metrics/aggregate",
       "summary": "Aggregate metrics across portfolio companies",
-      "description": "Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation.",
+      "description": "Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation. Ordered by metric type id, then aggregation, then fund id.",
       "exampleCall": "client.metrics.aggregate({ metricTypeIds: [1,7], aggregation: \"SUM\" })",
       "responseType": "MetricsAggregateResponse",
       "pathParams": [],
@@ -501,7 +514,7 @@ const routeManifest = {
       "method": "GET",
       "path": "/company-reports",
       "summary": "List published company reports accessible to the caller (metadata only)",
-      "description": "Returns lightweight report metadata (id, title, period, publisher company reference). Use GET /company-reports/:id to fetch the full content of a specific report. Visibility is determined by the caller's roles — VC users see reports for managed-portfolio companies, company employees see their own company's reports, portfolio investors see Published reports shared with their visibility groups. Filters narrow the list by company ids, funds (`companyGroupIds`), company name substring (`companyNameSearch`), and reporting period (timeframe + date range).",
+      "description": "Returns lightweight report metadata (id, title, period, publisher company reference). Use GET /company-reports/:id to fetch the full content of a specific report. Visibility is determined by the caller's roles — VC users see reports for managed-portfolio companies, company employees see their own company's reports, portfolio investors see Published reports shared with their visibility groups. Filters narrow the list by company ids, funds (`companyGroupIds`), company name substring (`companyNameSearch`), and reporting period (timeframe + date range). Ordered by report date descending, then id descending — newest first.",
       "exampleCall": "client.companyReports.list({ limit: 123 })",
       "responseType": "CompanyReportsListResponse",
       "pathParams": [],
@@ -510,13 +523,13 @@ const routeManifest = {
           "name": "limit",
           "required": false,
           "type": "number",
-          "description": "Maximum items per page. Currently accepted but not enforced; reserved for future pagination."
+          "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested."
         },
         {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyIds",
@@ -730,7 +743,7 @@ function createTransactionsNamespace(request) {
 
 function createMetricsNamespace(request) {
   return {
-    getTypes: (init = {}) => request({ method: "GET", path: "/metrics/types", pathParams: undefined, query: undefined, body: undefined, signal: init.signal }),
+    getTypes: (query = {}, init = {}) => request({ method: "GET", path: "/metrics/types", pathParams: undefined, query: query, body: undefined, signal: init.signal }),
     search: (body, init = {}) => request({ method: "POST", path: "/metrics", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
     compare: (body, init = {}) => request({ method: "POST", path: "/metrics/compare", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
     aggregate: (body, init = {}) => request({ method: "POST", path: "/metrics/aggregate", pathParams: undefined, query: undefined, body: body, signal: init.signal }),

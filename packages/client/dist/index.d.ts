@@ -382,6 +382,8 @@ export interface SdkBatchDashboardResponseDto {
 }
 
 export interface GetBatchDashboardBodyDto {
+  limit?: number
+  cursor?: string
   companyIds: number[]
   currency: string
   metricsFrom?: string
@@ -641,8 +643,6 @@ export interface SdkMetricCompareMultiResponseDto {
 }
 
 export interface MetricCompareDto {
-  limit?: number
-  cursor?: string
   metricTypeIds: number[]
   companyIds?: number[]
   companyNameSearch?: string[]
@@ -844,11 +844,11 @@ export interface CompaniesGetDashboardQuery {
 
 export interface CompaniesGetAllQuery {
   /**
-   * Maximum items per page. Currently accepted but not enforced; reserved for future pagination.
+   * Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -867,11 +867,11 @@ export interface CompaniesGetAllQuery {
 
 export interface CompanyGroupsGetAllQuery {
   /**
-   * Maximum items per page. Currently accepted but not enforced; reserved for future pagination.
+   * Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -886,11 +886,11 @@ export interface CompanyGroupsGetAllQuery {
 
 export interface PositionsGetPortfolioSummaryQuery {
   /**
-   * Maximum items per page. Currently accepted but not enforced; reserved for future pagination.
+   * Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -917,11 +917,11 @@ export interface PositionsGetPortfolioSummaryQuery {
 
 export interface PositionsGetCompanyPositionsQuery {
   /**
-   * Maximum items per page. Currently accepted but not enforced; reserved for future pagination.
+   * Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -959,11 +959,11 @@ export interface PositionsGetPortfolioPositionsQuery {
 
 export interface TransactionsGetSummaryQuery {
   /**
-   * Maximum items per page. Currently accepted but not enforced; reserved for future pagination.
+   * Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -994,11 +994,11 @@ export interface TransactionsGetSummaryQuery {
 
 export interface TransactionsGetCompanyTransactionsQuery {
   /**
-   * Maximum items per page. Currently accepted but not enforced; reserved for future pagination.
+   * Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1017,11 +1017,11 @@ export interface TransactionsGetCompanyTransactionsQuery {
 
 export interface TransactionsGetTransactionsQuery {
   /**
-   * Maximum items per page. Currently accepted but not enforced; reserved for future pagination.
+   * Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1042,13 +1042,24 @@ export interface TransactionsGetTransactionsQuery {
   companyIds?: number[]
 }
 
-export interface CompanyReportsListQuery {
+export interface MetricsGetTypesQuery {
   /**
-   * Maximum items per page. Currently accepted but not enforced; reserved for future pagination.
+   * Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's meta.nextCursor. Currently accepted but ignored.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   */
+  cursor?: string
+}
+
+export interface CompanyReportsListQuery {
+  /**
+   * Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.
+   */
+  limit?: number
+  /**
+   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1080,7 +1091,7 @@ export interface CompanyReportsListQuery {
 export interface CompaniesNamespace {
   /**
    * PREFERRED tool for multi-company analysis — full dashboards for many companies in one call
-   * PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=["acme","beta"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively).
+   * PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=["acme","beta"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively). Dashboards come back in the order the `companyIds` were requested, so `limit`/`cursor` paging is stable.
    * Parameters: body: CompaniesGetDashboardsBody
    * Returns: CompaniesGetDashboardsResponse
    */
@@ -1101,7 +1112,7 @@ export interface CompaniesNamespace {
   getOne(id: number, init?: RequestOptions): Promise<CompaniesGetOneResponse>
   /**
    * List companies available to the SDK consumer
-   * Returns the compact form (id, name, currency, type, website, logo) for every company the caller can read. Filter by `companyIds`, `companyGroupIds`, and/or `nameSearch` (case-insensitive substring on display name; accepts an array to resolve multiple companies at once with OR semantics — e.g. `nameSearch=["acme","beta","gamma"]` returns any company whose name contains any of the three substrings). Avoids listing the full portfolio when the agent only knows companies by name.
+   * Returns the compact form (id, name, currency, type, website, logo) for every company the caller can read. Filter by `companyIds`, `companyGroupIds`, and/or `nameSearch` (case-insensitive substring on display name; accepts an array to resolve multiple companies at once with OR semantics — e.g. `nameSearch=["acme","beta","gamma"]` returns any company whose name contains any of the three substrings). Avoids listing the full portfolio when the agent only knows companies by name. Ordered by company id ascending.
    * Parameters: query: limit? (number), cursor? (string), companyIds? (number[]), companyGroupIds? (number[]), nameSearch? (string[])
    * Returns: CompaniesGetAllResponse
    */
@@ -1111,7 +1122,7 @@ export interface CompaniesNamespace {
 export interface CompanyGroupsNamespace {
   /**
    * List funds available to the SDK consumer
-   * Returns compact fund metadata (id, name, demo flag, color, member company ids). Filter by `companyGroupIds` and/or `nameSearch` (case-insensitive substring on name; accepts an array to resolve multiple groups in one call with OR semantics — e.g. `nameSearch=["fund i","fund ii"]`).
+   * Returns compact fund metadata (id, name, demo flag, color, member company ids). Filter by `companyGroupIds` and/or `nameSearch` (case-insensitive substring on name; accepts an array to resolve multiple groups in one call with OR semantics — e.g. `nameSearch=["fund i","fund ii"]`). Ordered by fund id ascending.
    * Parameters: query: limit? (number), cursor? (string), companyGroupIds? (number[]), nameSearch? (string[])
    * Returns: CompanyGroupsGetAllResponse
    */
@@ -1128,14 +1139,14 @@ export interface CompanyGroupsNamespace {
 export interface PositionsNamespace {
   /**
    * Get portfolio summary with positions and key metrics per company
-   * Returns one row per company with position data (invested, fair value, multiple, ROI) and latest values for selected metrics. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway. Override with `metricTypeNames`. Designed for portfolio overview tables.
+   * Returns one row per company *per fund* — a company held by two funds appears twice, distinguished by `companyGroupId` — with position data (invested, fair value, multiple, ROI) and latest values for selected metrics. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway. Override with `metricTypeNames`. Designed for portfolio overview tables. Ordered by company id, then fund id.
    * Parameters: query: limit? (number), cursor? (string), companyGroupIds? (number[]), companyIds? (number[]), currency (string), date? (string), metricTypeNames? (string[])
    * Returns: PositionsGetPortfolioSummaryResponse
    */
   getPortfolioSummary(query?: PositionsGetPortfolioSummaryQuery, init?: RequestOptions): Promise<PositionsGetPortfolioSummaryResponse>
   /**
    * Get positions for one company
-   * Returns all fund-level positions for a single company — one entry per fund (`companyGroupId`) that holds a position in the company. Each entry carries invested amount, fair market value, ownership percentage, share counts, multiple, and ROI, all FX-converted to `currency` (ISO 4217, required). Filter by `companyGroupIds` to scope to specific funds. Use `date` (ISO 8601) for a historical snapshot; omit to use the latest available data.
+   * Returns all fund-level positions for a single company — one entry per fund (`companyGroupId`) that holds a position in the company. Each entry carries invested amount, fair market value, ownership percentage, share counts, multiple, and ROI, all FX-converted to `currency` (ISO 4217, required). Filter by `companyGroupIds` to scope to specific funds. Use `date` (ISO 8601) for a historical snapshot; omit to use the latest available data. Ordered by fund id ascending.
    * Parameters: path: id (number); query: limit? (number), cursor? (string), companyGroupIds? (number[]), currency (string), date? (string)
    * Returns: PositionsGetCompanyPositionsResponse
    */
@@ -1152,21 +1163,21 @@ export interface PositionsNamespace {
 export interface TransactionsNamespace {
   /**
    * Get transaction activity summary
-   * Returns aggregated transaction statistics: total invested, total realized, transaction count, company count, and breakdown by transaction type. Optionally group by period (Month, Quarter, Year). Filter by company, fund (`companyGroupIds`), and date range.
+   * Returns aggregated transaction statistics: total invested, total realized, transaction count, company count, and breakdown by transaction type. Optionally group by period (Month, Quarter, Year). Filter by company, fund (`companyGroupIds`), and date range. Ordered by period ascending.
    * Parameters: query: limit? (number), cursor? (string), companyGroupIds? (number[]), companyIds? (number[]), currency (string), groupBy? ("Month" | "Quarter" | "Year"), from? (string), to? (string)
    * Returns: TransactionsGetSummaryResponse
    */
   getSummary(query?: TransactionsGetSummaryQuery, init?: RequestOptions): Promise<TransactionsGetSummaryResponse>
   /**
    * Get transactions for one company
-   * Returns all transactions for a single company, ordered by date descending. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyGroupIds` to scope to a specific fund, `types` to limit to specific transaction kinds, and `priorTo` (ISO 8601) for a historical snapshot. Requires transaction read access on the company.
+   * Returns all transactions for a single company, ordered by date descending then id descending. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyGroupIds` to scope to a specific fund, `types` to limit to specific transaction kinds, and `priorTo` (ISO 8601) for a historical snapshot. Requires transaction read access on the company.
    * Parameters: path: id (number); query: limit? (number), cursor? (string), companyGroupIds? (number[]), types? (("Auction" | "ConvertibleNote" | "ConvertToEquity" | "Dividend" | "EquityInvestment" | "EquityReceived" | "Extend" | "FutureEquityAgreement" | "Insolvency" | "IPO" | "LimitedAuction" | "OptionsReceived" | "OtherExit" | "OtherInvestment" | "OtherRealization" | "Payback" | "Proprietary" | "TradeSale" | "ValuationChange" | "WriteOff")[]), priorTo? (string)
    * Returns: TransactionsGetCompanyTransactionsResponse
    */
   getCompanyTransactions(id: number, query?: TransactionsGetCompanyTransactionsQuery, init?: RequestOptions): Promise<TransactionsGetCompanyTransactionsResponse>
   /**
    * Get transactions for multiple companies
-   * Returns transactions across multiple companies. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyIds`, `companyGroupIds`, `types`, and `priorTo` (ISO 8601 upper-bound date for a historical snapshot). When `companyIds` is provided, the caller must have transaction read access on every listed company.
+   * Returns transactions across multiple companies. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyIds`, `companyGroupIds`, `types`, and `priorTo` (ISO 8601 upper-bound date for a historical snapshot). When `companyIds` is provided, the caller must have transaction read access on every listed company. Ordered by date descending, then id descending.
    * Parameters: query: limit? (number), cursor? (string), companyGroupIds? (number[]), types? (("Auction" | "ConvertibleNote" | "ConvertToEquity" | "Dividend" | "EquityInvestment" | "EquityReceived" | "Extend" | "FutureEquityAgreement" | "Insolvency" | "IPO" | "LimitedAuction" | "OptionsReceived" | "OtherExit" | "OtherInvestment" | "OtherRealization" | "Payback" | "Proprietary" | "TradeSale" | "ValuationChange" | "WriteOff")[]), priorTo? (string), companyIds? (number[])
    * Returns: TransactionsGetTransactionsResponse
    */
@@ -1176,13 +1187,14 @@ export interface TransactionsNamespace {
 export interface MetricsNamespace {
   /**
    * List metric types available to the SDK consumer
-   * Returns predefined metric types plus user-defined metric types scoped to the caller — VC group custom types for VC users, company custom types for company users. Each entry carries the metric shape needed to interpret values: `valueType` is `"numeric"` (read `point.value` as a number; may carry `rangeConfig` with min/max/step for ranged metrics) or `"option"` (read `point.optionValue` as a string from `optionConfig.options[]` — this is how boolean / yes-no metrics are encoded, as two options typically labelled "Yes"/"No"). `unit.unit` describes the measurement (`Currency`, `Percentage`, `Number`, time units, ...); `unit.currencyCode` is intentionally null on this endpoint because monetary types resolve their concrete currency per company — call /metrics to receive `unit.currencyCode` populated with each company's native currency, or pass `currency` to convert all monetary metrics to a chosen target.
+   * Returns predefined metric types plus user-defined metric types scoped to the caller — VC group custom types for VC users, company custom types for company users. Each entry carries the metric shape needed to interpret values: `valueType` is `"numeric"` (read `point.value` as a number; may carry `rangeConfig` with min/max/step for ranged metrics) or `"option"` (read `point.optionValue` as a string from `optionConfig.options[]` — this is how boolean / yes-no metrics are encoded, as two options typically labelled "Yes"/"No"). `unit.unit` describes the measurement (`Currency`, `Percentage`, `Number`, time units, ...); `unit.currencyCode` is intentionally null on this endpoint because monetary types resolve their concrete currency per company — call /metrics to receive `unit.currencyCode` populated with each company's native currency, or pass `currency` to convert all monetary metrics to a chosen target. Ordered by metric type id ascending.
+   * Parameters: query: limit? (number), cursor? (string)
    * Returns: MetricsGetTypesResponse
    */
-  getTypes(init?: RequestOptions): Promise<MetricsGetTypesResponse>
+  getTypes(query?: MetricsGetTypesQuery, init?: RequestOptions): Promise<MetricsGetTypesResponse>
   /**
    * Read metric values for accessible companies, grouped by company
-   * Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === "numeric"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === "option"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately.
+   * Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === "numeric"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === "option"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.
    * Parameters: body: MetricsSearchBody
    * Returns: MetricsSearchResponse
    */
@@ -1196,7 +1208,7 @@ export interface MetricsNamespace {
   compare(body: MetricsCompareBody, init?: RequestOptions): Promise<MetricsCompareResponse>
   /**
    * Aggregate metrics across portfolio companies
-   * Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation.
+   * Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation. Ordered by metric type id, then aggregation, then fund id.
    * Parameters: body: MetricsAggregateBody
    * Returns: MetricsAggregateResponse
    */
@@ -1206,7 +1218,7 @@ export interface MetricsNamespace {
 export interface CompanyReportsNamespace {
   /**
    * List published company reports accessible to the caller (metadata only)
-   * Returns lightweight report metadata (id, title, period, publisher company reference). Use GET /company-reports/:id to fetch the full content of a specific report. Visibility is determined by the caller's roles — VC users see reports for managed-portfolio companies, company employees see their own company's reports, portfolio investors see Published reports shared with their visibility groups. Filters narrow the list by company ids, funds (`companyGroupIds`), company name substring (`companyNameSearch`), and reporting period (timeframe + date range).
+   * Returns lightweight report metadata (id, title, period, publisher company reference). Use GET /company-reports/:id to fetch the full content of a specific report. Visibility is determined by the caller's roles — VC users see reports for managed-portfolio companies, company employees see their own company's reports, portfolio investors see Published reports shared with their visibility groups. Filters narrow the list by company ids, funds (`companyGroupIds`), company name substring (`companyNameSearch`), and reporting period (timeframe + date range). Ordered by report date descending, then id descending — newest first.
    * Parameters: query: limit? (number), cursor? (string), companyIds? (number[]), companyGroupIds? (number[]), companyNameSearch? (string[]), timeframe? ("Month" | "Quarter" | "Year"), from? (string), to? (string)
    * Returns: CompanyReportsListResponse
    */
@@ -1233,33 +1245,33 @@ export declare function createClient(options: CreateClientOptions): RunditClient
 
 export declare const routeManifest: {
   companies: {
-    getDashboards: { method: "POST"; path: "/companies/dashboards"; summary: "PREFERRED tool for multi-company analysis — full dashboards for many companies in one call"; description: "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively)."; exampleCall: "client.companies.getDashboards({ companyIds: [123], currency: 'USD' })"; responseType: "CompaniesGetDashboardsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    getDashboards: { method: "POST"; path: "/companies/dashboards"; summary: "PREFERRED tool for multi-company analysis — full dashboards for many companies in one call"; description: "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively). Dashboards come back in the order the `companyIds` were requested, so `limit`/`cursor` paging is stable."; exampleCall: "client.companies.getDashboards({ companyIds: [123], currency: 'USD' })"; responseType: "CompaniesGetDashboardsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
     getDashboard: { method: "GET"; path: "/companies/:id/dashboard"; summary: "Get full company dashboard for ONE company"; description: "Returns company metadata, positions per fund, all metrics with data points, recent transactions, and report summaries for a single company. For more than one company, prefer POST /companies/dashboards (`companies.getDashboards`) instead — it returns the same payload per company in one call and avoids the N+1 pattern. Use `metricsFrom` to limit metric history, `transactionLimit` and `reportLimit` to cap list sizes."; exampleCall: "client.companies.getDashboard(123, { currency: 'USD' })"; responseType: "CompaniesGetDashboardResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
     getOne: { method: "GET"; path: "/companies/:id"; summary: "Get one company available to the SDK consumer"; description: "Returns the full company object for a single company. Includes all compact-list fields (id, name, type, currency, website, logo) plus extended metadata: legal name, status, description, vision, address, city, state, country, operating countries, VAT number, founding year, established date, total funding, and accessible fund ids (as `companyGroupIds`). Returns 404 if the company does not exist or is inaccessible to the caller."; exampleCall: "client.companies.getOne(123)"; responseType: "CompaniesGetOneResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
-    getAll: { method: "GET"; path: "/companies"; summary: "List companies available to the SDK consumer"; description: "Returns the compact form (id, name, currency, type, website, logo) for every company the caller can read. Filter by `companyIds`, `companyGroupIds`, and/or `nameSearch` (case-insensitive substring on display name; accepts an array to resolve multiple companies at once with OR semantics — e.g. `nameSearch=[\"acme\",\"beta\",\"gamma\"]` returns any company whose name contains any of the three substrings). Avoids listing the full portfolio when the agent only knows companies by name."; exampleCall: "client.companies.getAll({ limit: 123 })"; responseType: "CompaniesGetAllResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    getAll: { method: "GET"; path: "/companies"; summary: "List companies available to the SDK consumer"; description: "Returns the compact form (id, name, currency, type, website, logo) for every company the caller can read. Filter by `companyIds`, `companyGroupIds`, and/or `nameSearch` (case-insensitive substring on display name; accepts an array to resolve multiple companies at once with OR semantics — e.g. `nameSearch=[\"acme\",\"beta\",\"gamma\"]` returns any company whose name contains any of the three substrings). Avoids listing the full portfolio when the agent only knows companies by name. Ordered by company id ascending."; exampleCall: "client.companies.getAll({ limit: 123 })"; responseType: "CompaniesGetAllResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
   }
   companyGroups: {
-    getAll: { method: "GET"; path: "/company-groups"; summary: "List funds available to the SDK consumer"; description: "Returns compact fund metadata (id, name, demo flag, color, member company ids). Filter by `companyGroupIds` and/or `nameSearch` (case-insensitive substring on name; accepts an array to resolve multiple groups in one call with OR semantics — e.g. `nameSearch=[\"fund i\",\"fund ii\"]`)."; exampleCall: "client.companyGroups.getAll({ limit: 123 })"; responseType: "CompanyGroupsGetAllResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    getAll: { method: "GET"; path: "/company-groups"; summary: "List funds available to the SDK consumer"; description: "Returns compact fund metadata (id, name, demo flag, color, member company ids). Filter by `companyGroupIds` and/or `nameSearch` (case-insensitive substring on name; accepts an array to resolve multiple groups in one call with OR semantics — e.g. `nameSearch=[\"fund i\",\"fund ii\"]`). Ordered by fund id ascending."; exampleCall: "client.companyGroups.getAll({ limit: 123 })"; responseType: "CompanyGroupsGetAllResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
     getOne: { method: "GET"; path: "/company-groups/:id"; summary: "Get one fund available to the SDK consumer"; description: "Returns full fund details. Includes all compact-list fields (id, name, type, currency, logo) plus extended fund metadata: legal name, domicile, management company, GP, vintage year, fund currency, opening and closing dates, legal form, investment policy, fees, regulatory info, and service providers. Also includes the list of member companies the caller can access. Returns 404 if the fund does not exist or is inaccessible to the caller."; exampleCall: "client.companyGroups.getOne(123)"; responseType: "CompanyGroupsGetOneResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
   }
   positions: {
-    getPortfolioSummary: { method: "GET"; path: "/positions/portfolio/summary"; summary: "Get portfolio summary with positions and key metrics per company"; description: "Returns one row per company with position data (invested, fair value, multiple, ROI) and latest values for selected metrics. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway. Override with `metricTypeNames`. Designed for portfolio overview tables."; exampleCall: "client.positions.getPortfolioSummary({ currency: 'USD' })"; responseType: "PositionsGetPortfolioSummaryResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
-    getCompanyPositions: { method: "GET"; path: "/positions/companies/:id"; summary: "Get positions for one company"; description: "Returns all fund-level positions for a single company — one entry per fund (`companyGroupId`) that holds a position in the company. Each entry carries invested amount, fair market value, ownership percentage, share counts, multiple, and ROI, all FX-converted to `currency` (ISO 4217, required). Filter by `companyGroupIds` to scope to specific funds. Use `date` (ISO 8601) for a historical snapshot; omit to use the latest available data."; exampleCall: "client.positions.getCompanyPositions(123, { currency: 'USD' })"; responseType: "PositionsGetCompanyPositionsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    getPortfolioSummary: { method: "GET"; path: "/positions/portfolio/summary"; summary: "Get portfolio summary with positions and key metrics per company"; description: "Returns one row per company *per fund* — a company held by two funds appears twice, distinguished by `companyGroupId` — with position data (invested, fair value, multiple, ROI) and latest values for selected metrics. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway. Override with `metricTypeNames`. Designed for portfolio overview tables. Ordered by company id, then fund id."; exampleCall: "client.positions.getPortfolioSummary({ currency: 'USD' })"; responseType: "PositionsGetPortfolioSummaryResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    getCompanyPositions: { method: "GET"; path: "/positions/companies/:id"; summary: "Get positions for one company"; description: "Returns all fund-level positions for a single company — one entry per fund (`companyGroupId`) that holds a position in the company. Each entry carries invested amount, fair market value, ownership percentage, share counts, multiple, and ROI, all FX-converted to `currency` (ISO 4217, required). Filter by `companyGroupIds` to scope to specific funds. Use `date` (ISO 8601) for a historical snapshot; omit to use the latest available data. Ordered by fund id ascending."; exampleCall: "client.positions.getCompanyPositions(123, { currency: 'USD' })"; responseType: "PositionsGetCompanyPositionsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
     getPortfolioPositions: { method: "GET"; path: "/positions/portfolio"; summary: "Get aggregated portfolio position totals"; description: "Returns a single aggregated position object that sums invested amount, fair market value, ownership percentage, share counts, multiple, and ROI across all accessible companies (optionally filtered by `companyIds` and/or `companyGroupIds` to scope to specific funds). `currency` (ISO 4217, required) converts all monetary values. Use `date` (ISO 8601) for a historical snapshot; omit for the latest available data. For a per-company breakdown instead of a single aggregate, use `GET /positions/portfolio/summary`."; exampleCall: "client.positions.getPortfolioPositions({ currency: 'USD' })"; responseType: "PositionsGetPortfolioPositionsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
   }
   transactions: {
-    getSummary: { method: "GET"; path: "/transactions/summary"; summary: "Get transaction activity summary"; description: "Returns aggregated transaction statistics: total invested, total realized, transaction count, company count, and breakdown by transaction type. Optionally group by period (Month, Quarter, Year). Filter by company, fund (`companyGroupIds`), and date range."; exampleCall: "client.transactions.getSummary({ currency: 'USD' })"; responseType: "TransactionsGetSummaryResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
-    getCompanyTransactions: { method: "GET"; path: "/transactions/companies/:id"; summary: "Get transactions for one company"; description: "Returns all transactions for a single company, ordered by date descending. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyGroupIds` to scope to a specific fund, `types` to limit to specific transaction kinds, and `priorTo` (ISO 8601) for a historical snapshot. Requires transaction read access on the company."; exampleCall: "client.transactions.getCompanyTransactions(123, { limit: 123 })"; responseType: "TransactionsGetCompanyTransactionsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
-    getTransactions: { method: "GET"; path: "/transactions"; summary: "Get transactions for multiple companies"; description: "Returns transactions across multiple companies. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyIds`, `companyGroupIds`, `types`, and `priorTo` (ISO 8601 upper-bound date for a historical snapshot). When `companyIds` is provided, the caller must have transaction read access on every listed company."; exampleCall: "client.transactions.getTransactions({ limit: 123 })"; responseType: "TransactionsGetTransactionsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    getSummary: { method: "GET"; path: "/transactions/summary"; summary: "Get transaction activity summary"; description: "Returns aggregated transaction statistics: total invested, total realized, transaction count, company count, and breakdown by transaction type. Optionally group by period (Month, Quarter, Year). Filter by company, fund (`companyGroupIds`), and date range. Ordered by period ascending."; exampleCall: "client.transactions.getSummary({ currency: 'USD' })"; responseType: "TransactionsGetSummaryResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    getCompanyTransactions: { method: "GET"; path: "/transactions/companies/:id"; summary: "Get transactions for one company"; description: "Returns all transactions for a single company, ordered by date descending then id descending. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyGroupIds` to scope to a specific fund, `types` to limit to specific transaction kinds, and `priorTo` (ISO 8601) for a historical snapshot. Requires transaction read access on the company."; exampleCall: "client.transactions.getCompanyTransactions(123, { limit: 123 })"; responseType: "TransactionsGetCompanyTransactionsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    getTransactions: { method: "GET"; path: "/transactions"; summary: "Get transactions for multiple companies"; description: "Returns transactions across multiple companies. Each transaction is a typed variant — narrow it via its `type` field. Filter by `companyIds`, `companyGroupIds`, `types`, and `priorTo` (ISO 8601 upper-bound date for a historical snapshot). When `companyIds` is provided, the caller must have transaction read access on every listed company. Ordered by date descending, then id descending."; exampleCall: "client.transactions.getTransactions({ limit: 123 })"; responseType: "TransactionsGetTransactionsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
   }
   metrics: {
-    getTypes: { method: "GET"; path: "/metrics/types"; summary: "List metric types available to the SDK consumer"; description: "Returns predefined metric types plus user-defined metric types scoped to the caller — VC group custom types for VC users, company custom types for company users. Each entry carries the metric shape needed to interpret values: `valueType` is `\"numeric\"` (read `point.value` as a number; may carry `rangeConfig` with min/max/step for ranged metrics) or `\"option\"` (read `point.optionValue` as a string from `optionConfig.options[]` — this is how boolean / yes-no metrics are encoded, as two options typically labelled \"Yes\"/\"No\"). `unit.unit` describes the measurement (`Currency`, `Percentage`, `Number`, time units, ...); `unit.currencyCode` is intentionally null on this endpoint because monetary types resolve their concrete currency per company — call /metrics to receive `unit.currencyCode` populated with each company's native currency, or pass `currency` to convert all monetary metrics to a chosen target."; exampleCall: "client.metrics.getTypes()"; responseType: "MetricsGetTypesResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
-    search: { method: "POST"; path: "/metrics"; summary: "Read metric values for accessible companies, grouped by company"; description: "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately."; exampleCall: "client.metrics.search({})"; responseType: "MetricsSearchResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    getTypes: { method: "GET"; path: "/metrics/types"; summary: "List metric types available to the SDK consumer"; description: "Returns predefined metric types plus user-defined metric types scoped to the caller — VC group custom types for VC users, company custom types for company users. Each entry carries the metric shape needed to interpret values: `valueType` is `\"numeric\"` (read `point.value` as a number; may carry `rangeConfig` with min/max/step for ranged metrics) or `\"option\"` (read `point.optionValue` as a string from `optionConfig.options[]` — this is how boolean / yes-no metrics are encoded, as two options typically labelled \"Yes\"/\"No\"). `unit.unit` describes the measurement (`Currency`, `Percentage`, `Number`, time units, ...); `unit.currencyCode` is intentionally null on this endpoint because monetary types resolve their concrete currency per company — call /metrics to receive `unit.currencyCode` populated with each company's native currency, or pass `currency` to convert all monetary metrics to a chosen target. Ordered by metric type id ascending."; exampleCall: "client.metrics.getTypes({ limit: 123 })"; responseType: "MetricsGetTypesResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    search: { method: "POST"; path: "/metrics"; summary: "Read metric values for accessible companies, grouped by company"; description: "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists."; exampleCall: "client.metrics.search({})"; responseType: "MetricsSearchResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
     compare: { method: "POST"; path: "/metrics/compare"; summary: "Compare metrics across companies"; description: "Returns date-aligned rows for one or more metric types across multiple companies. Pass `metricTypeIds` (resolve from /metrics/types) to compare several metrics in a single round trip; names are not accepted on this endpoint to keep selection stable. Each row contains one value per company for a given period. Optionally includes period-over-period percentage change. Use `companyIds`, `companyNameSearch`, or `companyGroupIds` to select companies."; exampleCall: "client.metrics.compare({ metricTypeIds: [1,7] })"; responseType: "MetricsCompareResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
-    aggregate: { method: "POST"; path: "/metrics/aggregate"; summary: "Aggregate metrics across portfolio companies"; description: "Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation."; exampleCall: "client.metrics.aggregate({ metricTypeIds: [1,7], aggregation: \"SUM\" })"; responseType: "MetricsAggregateResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    aggregate: { method: "POST"; path: "/metrics/aggregate"; summary: "Aggregate metrics across portfolio companies"; description: "Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation. Ordered by metric type id, then aggregation, then fund id."; exampleCall: "client.metrics.aggregate({ metricTypeIds: [1,7], aggregation: \"SUM\" })"; responseType: "MetricsAggregateResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
   }
   companyReports: {
-    list: { method: "GET"; path: "/company-reports"; summary: "List published company reports accessible to the caller (metadata only)"; description: "Returns lightweight report metadata (id, title, period, publisher company reference). Use GET /company-reports/:id to fetch the full content of a specific report. Visibility is determined by the caller's roles — VC users see reports for managed-portfolio companies, company employees see their own company's reports, portfolio investors see Published reports shared with their visibility groups. Filters narrow the list by company ids, funds (`companyGroupIds`), company name substring (`companyNameSearch`), and reporting period (timeframe + date range)."; exampleCall: "client.companyReports.list({ limit: 123 })"; responseType: "CompanyReportsListResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    list: { method: "GET"; path: "/company-reports"; summary: "List published company reports accessible to the caller (metadata only)"; description: "Returns lightweight report metadata (id, title, period, publisher company reference). Use GET /company-reports/:id to fetch the full content of a specific report. Visibility is determined by the caller's roles — VC users see reports for managed-portfolio companies, company employees see their own company's reports, portfolio investors see Published reports shared with their visibility groups. Filters narrow the list by company ids, funds (`companyGroupIds`), company name substring (`companyNameSearch`), and reporting period (timeframe + date range). Ordered by report date descending, then id descending — newest first."; exampleCall: "client.companyReports.list({ limit: 123 })"; responseType: "CompanyReportsListResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
     getOne: { method: "GET"; path: "/company-reports/:id"; summary: "Fetch the full content of a single company report"; description: "Returns the report metadata plus structured sections (text/markdown/image) and attachments with pre-signed URLs. Returns 404 if the report does not exist and 403 if the caller cannot access it under their role-based permissions."; exampleCall: "client.companyReports.getOne(123)"; responseType: "CompanyReportsGetOneResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
   }
 }

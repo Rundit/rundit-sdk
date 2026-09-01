@@ -88,8 +88,9 @@ console.log(routeManifest)
 ## metrics
 
 - metrics.getTypes: List metric types available to the SDK consumer
-  - Call: `client.metrics.getTypes()`
+  - Call: `client.metrics.getTypes({ limit: 123 })`
   - Returns: `MetricsGetTypesResponse`
+  - Params: query: limit? (number), cursor? (string)
 - metrics.search: Read metric values for accessible companies, grouped by company
   - Call: `client.metrics.search({})`
   - Returns: `MetricsSearchResponse`
