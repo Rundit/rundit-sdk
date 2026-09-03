@@ -170,6 +170,42 @@ List metric types available to the SDK consumer
 - Returns: `MetricsGetTypesResponse`
 - Params: query: limit? (number), cursor? (string)
 
+### `metrics.createType`
+
+Create a custom metric type
+
+- Call: `client.metrics.createType({ name: 'example', valueType: "numeric", aggMethod: "SUM", summaryAggregationMethods: ["SUM"] })`
+- HTTP: `POST /metrics/types`
+- Returns: `MetricsCreateTypeResponse`
+- Params: body: MetricsCreateTypeBody
+
+### `metrics.writePoints`
+
+Upsert or delete metric points
+
+- Call: `client.metrics.writePoints(123, { points: [{ date: '2024-12-31', value: 123, optionValue: 'example', timeframe: "Month" }] })`
+- HTTP: `PUT /metrics/:metricId/points`
+- Returns: `MetricsWritePointsResponse`
+- Params: path: metricId (number); body: MetricsWritePointsBody
+
+### `metrics.updateType`
+
+Update a custom metric type
+
+- Call: `client.metrics.updateType(123, { name: 'example', valueType: "numeric", aggMethod: "SUM", summaryAggregationMethods: ["SUM"] })`
+- HTTP: `PUT /metrics/types/:metricTypeId`
+- Returns: `MetricsUpdateTypeResponse`
+- Params: path: metricTypeId (number); body: MetricsUpdateTypeBody
+
+### `metrics.deleteType`
+
+Delete an unused custom metric type
+
+- Call: `client.metrics.deleteType(123)`
+- HTTP: `DELETE /metrics/types/:metricTypeId`
+- Returns: `MetricsDeleteTypeResponse`
+- Params: path: metricTypeId (number)
+
 ### `metrics.search`
 
 Read metric values for accessible companies, grouped by company

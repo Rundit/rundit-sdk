@@ -478,6 +478,64 @@ const routeManifest = {
         }
       ]
     },
+    "createType": {
+      "method": "POST",
+      "path": "/metrics/types",
+      "summary": "Create a custom metric type",
+      "description": null,
+      "exampleCall": "client.metrics.createType({ name: 'example', valueType: \"numeric\", aggMethod: \"SUM\", summaryAggregationMethods: [\"SUM\"] })",
+      "responseType": "MetricsCreateTypeResponse",
+      "pathParams": [],
+      "queryParams": []
+    },
+    "writePoints": {
+      "method": "PUT",
+      "path": "/metrics/:metricId/points",
+      "summary": "Upsert or delete metric points",
+      "description": "Writes points for one metric instance. Set the value matching the metric type and set the other value to null. Set both values to null to delete that period.",
+      "exampleCall": "client.metrics.writePoints(123, { points: [{ date: '2024-12-31', value: 123, optionValue: 'example', timeframe: \"Month\" }] })",
+      "responseType": "MetricsWritePointsResponse",
+      "pathParams": [
+        {
+          "name": "metricId",
+          "type": "number",
+          "description": null
+        }
+      ],
+      "queryParams": []
+    },
+    "updateType": {
+      "method": "PUT",
+      "path": "/metrics/types/:metricTypeId",
+      "summary": "Update a custom metric type",
+      "description": null,
+      "exampleCall": "client.metrics.updateType(123, { name: 'example', valueType: \"numeric\", aggMethod: \"SUM\", summaryAggregationMethods: [\"SUM\"] })",
+      "responseType": "MetricsUpdateTypeResponse",
+      "pathParams": [
+        {
+          "name": "metricTypeId",
+          "type": "number",
+          "description": null
+        }
+      ],
+      "queryParams": []
+    },
+    "deleteType": {
+      "method": "DELETE",
+      "path": "/metrics/types/:metricTypeId",
+      "summary": "Delete an unused custom metric type",
+      "description": null,
+      "exampleCall": "client.metrics.deleteType(123)",
+      "responseType": "MetricsDeleteTypeResponse",
+      "pathParams": [
+        {
+          "name": "metricTypeId",
+          "type": "number",
+          "description": null
+        }
+      ],
+      "queryParams": []
+    },
     "search": {
       "method": "POST",
       "path": "/metrics",
@@ -744,6 +802,10 @@ function createTransactionsNamespace(request) {
 function createMetricsNamespace(request) {
   return {
     getTypes: (query = {}, init = {}) => request({ method: "GET", path: "/metrics/types", pathParams: undefined, query: query, body: undefined, signal: init.signal }),
+    createType: (body, init = {}) => request({ method: "POST", path: "/metrics/types", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
+    writePoints: (metricId, body, init = {}) => request({ method: "PUT", path: "/metrics/:metricId/points", pathParams: { metricId }, query: undefined, body: body, signal: init.signal }),
+    updateType: (metricTypeId, body, init = {}) => request({ method: "PUT", path: "/metrics/types/:metricTypeId", pathParams: { metricTypeId }, query: undefined, body: body, signal: init.signal }),
+    deleteType: (metricTypeId, init = {}) => request({ method: "DELETE", path: "/metrics/types/:metricTypeId", pathParams: { metricTypeId }, query: undefined, body: undefined, signal: init.signal }),
     search: (body, init = {}) => request({ method: "POST", path: "/metrics", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
     compare: (body, init = {}) => request({ method: "POST", path: "/metrics/compare", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
     aggregate: (body, init = {}) => request({ method: "POST", path: "/metrics/aggregate", pathParams: undefined, query: undefined, body: body, signal: init.signal }),

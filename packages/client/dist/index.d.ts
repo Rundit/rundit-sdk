@@ -150,6 +150,7 @@ export interface SdkMetricTypeDto {
   description?: string | null
   origin?: {  }
   aggMethod: {  }
+  summaryAggregationMethods: ("SUM" | "AVG" | "MEDIAN" | "COUNT_POSITIVES" | "AVG_POSITIVES_PERCENTAGE")[]
   valueType?: {  }
   unit?: SdkMetricUnitDto
   optionConfig?: SdkMetricTypeOptionConfigDto
@@ -587,6 +588,50 @@ export interface SdkMetricTypesListResponseDto {
   meta: SdkPaginationMetaDto
 }
 
+export interface SdkMetricTypeOptionWriteDto {
+  value: string
+  isPositive: boolean
+}
+
+export interface SdkMetricTypeOptionConfigWriteDto {
+  options: SdkMetricTypeOptionWriteDto[]
+}
+
+export interface SdkMetricTypeRangeConfigWriteDto {
+  min: number
+  max: number
+  step: number
+}
+
+export interface SdkMetricTypeWriteRequestDto {
+  name: string
+  shortName?: string | null
+  description?: string | null
+  valueType: "numeric" | "option"
+  unit?: "Percentage" | "Currency" | "Number" | "Second" | "Minute" | "Hour" | "Day" | "Week" | "Month" | "Quarter" | "Year"
+  aggMethod: "SUM" | "LAST_AVAILABLE" | "AVG" | "NONE"
+  summaryAggregationMethods: ("SUM" | "AVG" | "MEDIAN" | "COUNT_POSITIVES" | "AVG_POSITIVES_PERCENTAGE")[]
+  optionConfig?: SdkMetricTypeOptionConfigWriteDto
+  rangeConfig?: SdkMetricTypeRangeConfigWriteDto
+}
+
+export interface SdkMetricPointsWriteResponseDto {
+  metricId: number
+  companyId: number
+  points: SdkMetricPointDto[]
+}
+
+export interface SdkMetricPointWriteDto {
+  date: string
+  value: number | null
+  optionValue: string | null
+  timeframe: "Month" | "Quarter" | "Year"
+}
+
+export interface SdkMetricPointsWriteRequestDto {
+  points: SdkMetricPointWriteDto[]
+}
+
 export interface SdkCompanyMetricsDto {
   companyId: number
   company: SdkCompanyReferenceDto
@@ -806,6 +851,20 @@ export type TransactionsGetCompanyTransactionsResponse = SdkTransactionsListResp
 export type TransactionsGetTransactionsResponse = SdkTransactionsListResponseDto
 
 export type MetricsGetTypesResponse = SdkMetricTypesListResponseDto
+
+export type MetricsCreateTypeResponse = SdkMetricTypeDto
+
+export type MetricsCreateTypeBody = SdkMetricTypeWriteRequestDto
+
+export type MetricsWritePointsResponse = SdkMetricPointsWriteResponseDto
+
+export type MetricsWritePointsBody = SdkMetricPointsWriteRequestDto
+
+export type MetricsUpdateTypeResponse = SdkMetricTypeDto
+
+export type MetricsUpdateTypeBody = SdkMetricTypeWriteRequestDto
+
+export type MetricsDeleteTypeResponse = unknown
 
 export type MetricsSearchResponse = SdkCompanyMetricsListResponseDto
 
@@ -1193,6 +1252,31 @@ export interface MetricsNamespace {
    */
   getTypes(query?: MetricsGetTypesQuery, init?: RequestOptions): Promise<MetricsGetTypesResponse>
   /**
+   * Create a custom metric type
+   * Parameters: body: MetricsCreateTypeBody
+   * Returns: MetricsCreateTypeResponse
+   */
+  createType(body: MetricsCreateTypeBody, init?: RequestOptions): Promise<MetricsCreateTypeResponse>
+  /**
+   * Upsert or delete metric points
+   * Writes points for one metric instance. Set the value matching the metric type and set the other value to null. Set both values to null to delete that period.
+   * Parameters: path: metricId (number); body: MetricsWritePointsBody
+   * Returns: MetricsWritePointsResponse
+   */
+  writePoints(metricId: number, body: MetricsWritePointsBody, init?: RequestOptions): Promise<MetricsWritePointsResponse>
+  /**
+   * Update a custom metric type
+   * Parameters: path: metricTypeId (number); body: MetricsUpdateTypeBody
+   * Returns: MetricsUpdateTypeResponse
+   */
+  updateType(metricTypeId: number, body: MetricsUpdateTypeBody, init?: RequestOptions): Promise<MetricsUpdateTypeResponse>
+  /**
+   * Delete an unused custom metric type
+   * Parameters: path: metricTypeId (number)
+   * Returns: MetricsDeleteTypeResponse
+   */
+  deleteType(metricTypeId: number, init?: RequestOptions): Promise<MetricsDeleteTypeResponse>
+  /**
    * Read metric values for accessible companies, grouped by company
    * Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === "numeric"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === "option"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.
    * Parameters: body: MetricsSearchBody
@@ -1266,6 +1350,10 @@ export declare const routeManifest: {
   }
   metrics: {
     getTypes: { method: "GET"; path: "/metrics/types"; summary: "List metric types available to the SDK consumer"; description: "Returns predefined metric types plus user-defined metric types scoped to the caller — VC group custom types for VC users, company custom types for company users. Each entry carries the metric shape needed to interpret values: `valueType` is `\"numeric\"` (read `point.value` as a number; may carry `rangeConfig` with min/max/step for ranged metrics) or `\"option\"` (read `point.optionValue` as a string from `optionConfig.options[]` — this is how boolean / yes-no metrics are encoded, as two options typically labelled \"Yes\"/\"No\"). `unit.unit` describes the measurement (`Currency`, `Percentage`, `Number`, time units, ...); `unit.currencyCode` is intentionally null on this endpoint because monetary types resolve their concrete currency per company — call /metrics to receive `unit.currencyCode` populated with each company's native currency, or pass `currency` to convert all monetary metrics to a chosen target. Ordered by metric type id ascending."; exampleCall: "client.metrics.getTypes({ limit: 123 })"; responseType: "MetricsGetTypesResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    createType: { method: "POST"; path: "/metrics/types"; summary: "Create a custom metric type"; description: null; exampleCall: "client.metrics.createType({ name: 'example', valueType: \"numeric\", aggMethod: \"SUM\", summaryAggregationMethods: [\"SUM\"] })"; responseType: "MetricsCreateTypeResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    writePoints: { method: "PUT"; path: "/metrics/:metricId/points"; summary: "Upsert or delete metric points"; description: "Writes points for one metric instance. Set the value matching the metric type and set the other value to null. Set both values to null to delete that period."; exampleCall: "client.metrics.writePoints(123, { points: [{ date: '2024-12-31', value: 123, optionValue: 'example', timeframe: \"Month\" }] })"; responseType: "MetricsWritePointsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    updateType: { method: "PUT"; path: "/metrics/types/:metricTypeId"; summary: "Update a custom metric type"; description: null; exampleCall: "client.metrics.updateType(123, { name: 'example', valueType: \"numeric\", aggMethod: \"SUM\", summaryAggregationMethods: [\"SUM\"] })"; responseType: "MetricsUpdateTypeResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    deleteType: { method: "DELETE"; path: "/metrics/types/:metricTypeId"; summary: "Delete an unused custom metric type"; description: null; exampleCall: "client.metrics.deleteType(123)"; responseType: "MetricsDeleteTypeResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
     search: { method: "POST"; path: "/metrics"; summary: "Read metric values for accessible companies, grouped by company"; description: "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists."; exampleCall: "client.metrics.search({})"; responseType: "MetricsSearchResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
     compare: { method: "POST"; path: "/metrics/compare"; summary: "Compare metrics across companies"; description: "Returns date-aligned rows for one or more metric types across multiple companies. Pass `metricTypeIds` (resolve from /metrics/types) to compare several metrics in a single round trip; names are not accepted on this endpoint to keep selection stable. Each row contains one value per company for a given period. Optionally includes period-over-period percentage change. Use `companyIds`, `companyNameSearch`, or `companyGroupIds` to select companies."; exampleCall: "client.metrics.compare({ metricTypeIds: [1,7] })"; responseType: "MetricsCompareResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
     aggregate: { method: "POST"; path: "/metrics/aggregate"; summary: "Aggregate metrics across portfolio companies"; description: "Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation. Ordered by metric type id, then aggregation, then fund id."; exampleCall: "client.metrics.aggregate({ metricTypeIds: [1,7], aggregation: \"SUM\" })"; responseType: "MetricsAggregateResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }

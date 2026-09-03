@@ -150,6 +150,7 @@ export interface SdkMetricTypeDto {
   description?: string | null
   origin?: {  }
   aggMethod: {  }
+  summaryAggregationMethods: ("SUM" | "AVG" | "MEDIAN" | "COUNT_POSITIVES" | "AVG_POSITIVES_PERCENTAGE")[]
   valueType?: {  }
   unit?: SdkMetricUnitDto
   optionConfig?: SdkMetricTypeOptionConfigDto

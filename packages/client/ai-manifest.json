@@ -512,6 +512,68 @@
         ]
       },
       {
+        "operation": "createType",
+        "summary": "Create a custom metric type",
+        "description": null,
+        "method": "POST",
+        "path": "/metrics/types",
+        "exampleCall": "client.metrics.createType({ name: 'example', valueType: \"numeric\", aggMethod: \"SUM\", summaryAggregationMethods: [\"SUM\"] })",
+        "responseType": "MetricsCreateTypeResponse",
+        "pathParams": [],
+        "queryParams": []
+      },
+      {
+        "operation": "writePoints",
+        "summary": "Upsert or delete metric points",
+        "description": "Writes points for one metric instance. Set the value matching the metric type and set the other value to null. Set both values to null to delete that period.",
+        "method": "PUT",
+        "path": "/metrics/:metricId/points",
+        "exampleCall": "client.metrics.writePoints(123, { points: [{ date: '2024-12-31', value: 123, optionValue: 'example', timeframe: \"Month\" }] })",
+        "responseType": "MetricsWritePointsResponse",
+        "pathParams": [
+          {
+            "name": "metricId",
+            "type": "number",
+            "description": null
+          }
+        ],
+        "queryParams": []
+      },
+      {
+        "operation": "updateType",
+        "summary": "Update a custom metric type",
+        "description": null,
+        "method": "PUT",
+        "path": "/metrics/types/:metricTypeId",
+        "exampleCall": "client.metrics.updateType(123, { name: 'example', valueType: \"numeric\", aggMethod: \"SUM\", summaryAggregationMethods: [\"SUM\"] })",
+        "responseType": "MetricsUpdateTypeResponse",
+        "pathParams": [
+          {
+            "name": "metricTypeId",
+            "type": "number",
+            "description": null
+          }
+        ],
+        "queryParams": []
+      },
+      {
+        "operation": "deleteType",
+        "summary": "Delete an unused custom metric type",
+        "description": null,
+        "method": "DELETE",
+        "path": "/metrics/types/:metricTypeId",
+        "exampleCall": "client.metrics.deleteType(123)",
+        "responseType": "MetricsDeleteTypeResponse",
+        "pathParams": [
+          {
+            "name": "metricTypeId",
+            "type": "number",
+            "description": null
+          }
+        ],
+        "queryParams": []
+      },
+      {
         "operation": "search",
         "summary": "Read metric values for accessible companies, grouped by company",
         "description": "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.",
