@@ -3,7 +3,7 @@
   "paths": {
     "/api/v2/sdk/companies/dashboards": {
       "post": {
-        "description": "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively). Dashboards come back in the order the `companyIds` were requested, so `limit`/`cursor` paging is stable.",
+        "description": "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` (case-insensitive exact match on full name or `shortName`) to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively). Dashboards come back in the order the `companyIds` were requested, so `limit`/`cursor` paging is stable.",
         "operationId": "companies.getDashboards",
         "parameters": [],
         "requestBody": {
@@ -161,7 +161,7 @@
     },
     "/api/v2/sdk/companies/{id}": {
       "get": {
-        "description": "Returns the full company object for a single company. Includes all compact-list fields (id, name, type, currency, website, logo) plus extended metadata: legal name, status, description, vision, address, city, state, country, operating countries, VAT number, founding year, established date, total funding, and accessible fund ids (as `companyGroupIds`). Returns 404 if the company does not exist or is inaccessible to the caller.",
+        "description": "Returns the full company object for a single company. Includes all compact-list fields (id, name, type, currency, website, logo) plus extended metadata: legal name, status, description, vision, address, city, state, country, operating countries, VAT number, founding year, established date, total funding, and accessible fund ids (as `companyGroupIds`). Returns 403 (not 404) both when the company does not exist and when it is outside the caller's access — existence is deliberately not disclosed. Once the request is authenticated and carries the required scope, a 403 on this route therefore means an unknown or inaccessible id; resolve ids via `GET /companies` first. (A missing API key scope also yields 403, with an \"Insufficient API key scopes\" message.)",
         "operationId": "companies.getOne",
         "parameters": [
           {
@@ -411,7 +411,7 @@
     },
     "/api/v2/sdk/company-groups/{id}": {
       "get": {
-        "description": "Returns full fund details. Includes all compact-list fields (id, name, type, currency, logo) plus extended fund metadata: legal name, domicile, management company, GP, vintage year, fund currency, opening and closing dates, legal form, investment policy, fees, regulatory info, and service providers. Also includes the list of member companies the caller can access. Returns 404 if the fund does not exist or is inaccessible to the caller.",
+        "description": "Returns full fund details. Includes all compact-list fields (id, name, type, currency, logo) plus extended fund metadata: legal name, domicile, management company, GP, vintage year, fund currency, opening and closing dates, legal form, investment policy, fees, regulatory info, and service providers. Also includes the list of member companies the caller can access. Returns 403 (not 404) both when the fund does not exist and when it is outside the caller's access — existence is deliberately not disclosed. Once the request is authenticated and carries the required scope, a 403 on this route therefore means an unknown or inaccessible id; resolve ids via `GET /company-groups` first. (A missing API key scope also yields 403, with an \"Insufficient API key scopes\" message.)",
         "operationId": "companyGroups.getOne",
         "parameters": [
           {
@@ -467,7 +467,7 @@
     },
     "/api/v2/sdk/positions/portfolio/summary": {
       "get": {
-        "description": "Returns one row per company *per fund* — a company held by two funds appears twice, distinguished by `companyGroupId` — with position data (invested, fair value, multiple, ROI) and latest values for selected metrics. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway. Override with `metricTypeNames`. Designed for portfolio overview tables. Ordered by company id, then fund id.",
+        "description": "Returns one row per company *per fund* — a company held by two funds appears twice, distinguished by `companyGroupId` — with position data (invested, fair value, multiple, ROI) and latest values for selected metrics. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway. Override with `metricTypeNames` (case-insensitive exact match on full name or `shortName`). Designed for portfolio overview tables. Ordered by company id, then fund id.",
         "operationId": "positions.getPortfolioSummary",
         "parameters": [
           {
@@ -536,7 +536,7 @@
             "name": "metricTypeNames",
             "required": false,
             "in": "query",
-            "description": "Metric type names to include in the latest metrics snapshot. Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway.",
+            "description": "Metric type names to include in the latest metrics snapshot (case-insensitive exact match on display name or `shortName`). Defaults to MRR, Cash Balance, Headcount, Net Burn Rate, and Runway. Names that match no accessible metric type are ignored.",
             "schema": {
               "type": "array",
               "items": {
@@ -1249,7 +1249,7 @@
     },
     "/api/v2/sdk/metrics": {
       "post": {
-        "description": "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames`), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.",
+        "description": "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames` — case-insensitive exact match on either the full name or the `shortName`, so \"MRR\" and \"MRR - Monthly Recurring Revenue\" both work), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.",
         "operationId": "metrics.search",
         "parameters": [],
         "requestBody": {
@@ -1361,7 +1361,7 @@
     },
     "/api/v2/sdk/metrics/aggregate": {
       "post": {
-        "description": "Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation. Ordered by metric type id, then aggregation, then fund id.",
+        "description": "Returns aggregated metric values (SUM, AVG, MEDIAN, MIN, MAX, COUNT) across companies for each reporting period. Pass `metricTypeIds` (resolve from /metrics/types) to select what to aggregate; names are not accepted on this endpoint to keep selection stable. Optionally group results by fund (`companyGroupId`) for fund-level breakdowns. MIN, MAX, and COUNT are always computed. SUM, AVG, and MEDIAN are only produced when the metric type enables them in its `summaryAggregationMethods` configuration; otherwise `point.value` is `null` for that aggregation. Every requested metric type the caller can access yields one entry (per fund when grouped) — with an empty `points` array when none of the selected companies has a value for it, so \"no data\" is explicit rather than a missing row. Ids that match no accessible metric type produce no entry. Select companies with `companyIds`, `companyNameSearch`, or `companyGroupIds`; when those select no company at all the response is an empty list. Ordered by fund id, then by the order of the requested `metricTypeIds`.",
         "operationId": "metrics.aggregate",
         "parameters": [],
         "requestBody": {
@@ -1669,7 +1669,7 @@
             ]
           },
           "metricTypeNames": {
-            "description": "Metric type names to include. Omit to include all metrics. Use metric type ids via `metricTypeIds` when ids are known.",
+            "description": "Metric type names to include (case-insensitive exact match on display name or `shortName`). Omit to include all metrics. Use metric type ids via `metricTypeIds` when ids are known. Names that match no accessible metric type are ignored.",
             "type": "array",
             "items": {
               "type": "string"
@@ -5081,7 +5081,7 @@
             }
           },
           "metricTypeNames": {
-            "description": "Resolve metric types by case-insensitive exact match on their display name and intersect with `metricTypeIds`. Lets the agent fetch by metric name (e.g. \"Revenue\") without first listing /metrics/types.",
+            "description": "Resolve metric types by case-insensitive exact match on their display name OR `shortName` (so \"MRR\" matches \"MRR - Monthly Recurring Revenue\") and intersect with `metricTypeIds`. Lets the agent fetch by metric name (e.g. \"Revenue\") without first listing /metrics/types. Names that match no accessible metric type are ignored, so an empty result may mean a name did not resolve — verify names against /metrics/types.",
             "type": "array",
             "items": {
               "type": "string"
@@ -5408,6 +5408,13 @@
               "type": "number"
             }
           },
+          "companyNameSearch": {
+            "description": "Case-insensitive substring match on company display name. Pass an array to select multiple companies in one call — a company matches if its name contains ANY of the listed substrings (OR semantics). A single string is also accepted and treated as a one-element array. Intersects with `companyIds`/`companyGroupIds`. When the combined company filters select no company at all, the response is an empty list — nothing to aggregate over.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "companyGroupIds": {
             "description": "Restrict to companies that belong to any of these company groups.",
             "type": "array",
@@ -5527,7 +5534,7 @@
             ]
           },
           "points": {
-            "description": "Aggregated data points ordered by date ascending.",
+            "description": "Aggregated data points ordered by date ascending. Empty when none of the selected companies has a value for this metric type — the entry is still returned so \"no data\" is explicit.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SdkAggregatedPointDto"
