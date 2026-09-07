@@ -1216,7 +1216,7 @@ function createExampleValue(name, type, isQuery) {
   }
 
   if (name.toLowerCase().includes('date')) {
-    return `'2024-12-31'`
+    return `'2024-12-01'`
   }
 
   if (name.toLowerCase().includes('id')) {
