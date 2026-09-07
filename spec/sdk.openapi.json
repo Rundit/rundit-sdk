@@ -5275,11 +5275,13 @@
           "value": {
             "type": "number",
             "nullable": true,
+            "example": 123,
             "description": "Numeric value, or null for option metrics/deletion."
           },
           "optionValue": {
             "type": "string",
             "nullable": true,
+            "example": null,
             "description": "Option value, or null for numeric metrics/deletion."
           },
           "timeframe": {

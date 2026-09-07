@@ -96,7 +96,7 @@ console.log(routeManifest)
   - Returns: `MetricsCreateTypeResponse`
   - Params: body: MetricsCreateTypeBody
 - metrics.writePoints: Upsert or delete metric points
-  - Call: `client.metrics.writePoints(123, { points: [{ date: '2024-12-01', value: 123, optionValue: 'example', timeframe: "Month" }] })`
+  - Call: `client.metrics.writePoints(123, { points: [{ date: '2024-12-01', value: 123, optionValue: null, timeframe: "Month" }] })`
   - Returns: `MetricsWritePointsResponse`
   - Params: path: metricId (number); body: MetricsWritePointsBody
 - metrics.updateType: Update a custom metric type

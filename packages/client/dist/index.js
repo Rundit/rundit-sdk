@@ -493,7 +493,7 @@ const routeManifest = {
       "path": "/metrics/:metricId/points",
       "summary": "Upsert or delete metric points",
       "description": "Writes points for one metric instance. Set the value matching the metric type and set the other value to null. Set both values to null to delete that period.",
-      "exampleCall": "client.metrics.writePoints(123, { points: [{ date: '2024-12-01', value: 123, optionValue: 'example', timeframe: \"Month\" }] })",
+      "exampleCall": "client.metrics.writePoints(123, { points: [{ date: '2024-12-01', value: 123, optionValue: null, timeframe: \"Month\" }] })",
       "responseType": "MetricsWritePointsResponse",
       "pathParams": [
         {

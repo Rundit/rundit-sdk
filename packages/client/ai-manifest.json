@@ -528,7 +528,7 @@
         "description": "Writes points for one metric instance. Set the value matching the metric type and set the other value to null. Set both values to null to delete that period.",
         "method": "PUT",
         "path": "/metrics/:metricId/points",
-        "exampleCall": "client.metrics.writePoints(123, { points: [{ date: '2024-12-01', value: 123, optionValue: 'example', timeframe: \"Month\" }] })",
+        "exampleCall": "client.metrics.writePoints(123, { points: [{ date: '2024-12-01', value: 123, optionValue: null, timeframe: \"Month\" }] })",
         "responseType": "MetricsWritePointsResponse",
         "pathParams": [
           {

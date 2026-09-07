@@ -183,7 +183,7 @@ Create a custom metric type
 
 Upsert or delete metric points
 
-- Call: `client.metrics.writePoints(123, { points: [{ date: '2024-12-01', value: 123, optionValue: 'example', timeframe: "Month" }] })`
+- Call: `client.metrics.writePoints(123, { points: [{ date: '2024-12-01', value: 123, optionValue: null, timeframe: "Month" }] })`
 - HTTP: `PUT /metrics/:metricId/points`
 - Returns: `MetricsWritePointsResponse`
 - Params: path: metricId (number); body: MetricsWritePointsBody
