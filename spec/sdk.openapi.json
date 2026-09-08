@@ -1247,6 +1247,67 @@
         "x-sdk-operation": "getTypes"
       }
     },
+    "/api/v2/sdk/metrics/{metricId}/points": {
+      "put": {
+        "description": "Writes points for one metric instance. Set exactly one of value or optionValue according to the metric type and set the other field to null.",
+        "operationId": "metrics.writePoints",
+        "parameters": [
+          {
+            "name": "metricId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SdkMetricPointsWriteRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkMetricPointsWriteResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Upsert metric points",
+        "tags": [
+          "sdk-metrics"
+        ],
+        "x-api-key-scopes": [
+          "metrics:write"
+        ],
+        "x-sdk-audiences": [
+          "client"
+        ],
+        "x-sdk-namespace": "metrics",
+        "x-sdk-operation": "writePoints"
+      }
+    },
     "/api/v2/sdk/metrics": {
       "post": {
         "description": "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames` — case-insensitive exact match on either the full name or the `shortName`, so \"MRR\" and \"MRR - Monthly Recurring Revenue\" both work), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.",
@@ -5037,6 +5098,77 @@
         "required": [
           "data",
           "meta"
+        ]
+      },
+      "SdkMetricPointWriteDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Reporting period date (YYYY-MM-DD), on the first day of the month."
+          },
+          "value": {
+            "type": "number",
+            "nullable": true,
+            "example": 123,
+            "description": "Numeric value. Set to null for option metrics."
+          },
+          "optionValue": {
+            "type": "string",
+            "nullable": true,
+            "example": null,
+            "description": "Option value. Set to null for numeric metrics."
+          },
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "Month",
+              "Quarter",
+              "Year"
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "value",
+          "optionValue",
+          "timeframe"
+        ]
+      },
+      "SdkMetricPointsWriteRequestDto": {
+        "type": "object",
+        "properties": {
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricPointWriteDto"
+            }
+          }
+        },
+        "required": [
+          "points"
+        ]
+      },
+      "SdkMetricPointsWriteResponseDto": {
+        "type": "object",
+        "properties": {
+          "metricId": {
+            "type": "number"
+          },
+          "companyId": {
+            "type": "number"
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricPointDto"
+            }
+          }
+        },
+        "required": [
+          "metricId",
+          "companyId",
+          "points"
         ]
       },
       "MetricSearchDto": {
