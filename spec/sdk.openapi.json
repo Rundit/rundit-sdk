@@ -1383,6 +1383,58 @@
         "x-sdk-operation": "getTypes"
       }
     },
+    "/api/v2/sdk/metrics/points": {
+      "put": {
+        "description": "Preferred for bulk writes: companies contains companyId, native currency and metric items selected by type id or exact name/shortName, optionally flavor actual/forecast/budget. No instance-id discovery needed. Upserts replace existing values like writePoints. Returns only company, metric and point counts. Does not create metric types, rows or template requests; missing rows return 404. VC API-key callers only; metrics:write and company edit permissions are required for every company. All company access, currencies, rows and point values are checked before writes begin. Limits: 100 companies, 50 items per company, 1000 items and 10000 points total, 250 points per item. Duplicate companies/rows/periods are rejected. Set exactly one of value or optionValue and the other to null. No implicit deletion or FX conversion. Unexpected persistence failures may leave earlier companies written; replaying the same values is safe.",
+        "operationId": "metrics.writePointsBatch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SdkMetricBatchWriteRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkMetricBatchWriteResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Upsert points for existing metrics across multiple companies",
+        "tags": [
+          "sdk-metrics"
+        ],
+        "x-api-key-scopes": [
+          "metrics:write"
+        ],
+        "x-sdk-audiences": [
+          "client"
+        ],
+        "x-sdk-namespace": "metrics",
+        "x-sdk-operation": "writePointsBatch"
+      }
+    },
     "/api/v2/sdk/metrics/{metricId}/points": {
       "put": {
         "description": "Writes points for one metric instance. Set exactly one of value or optionValue according to the metric type and set the other field to null.",
@@ -5389,6 +5441,102 @@
           "value",
           "optionValue",
           "timeframe"
+        ]
+      },
+      "SdkMetricBatchWriteItemDto": {
+        "type": "object",
+        "properties": {
+          "metricTypeId": {
+            "type": "number",
+            "description": "Existing metric type id. Supply exactly one of metricTypeId or metricTypeName."
+          },
+          "metricTypeName": {
+            "type": "string",
+            "description": "Exact case-insensitive full name or shortName, e.g. MRR. Unknown or ambiguous names fail."
+          },
+          "flavor": {
+            "type": "string",
+            "enum": [
+              "actual",
+              "forecast",
+              "budget"
+            ],
+            "default": "actual",
+            "description": "Select an existing row. Missing forecast/budget rows are not created."
+          },
+          "points": {
+            "minItems": 1,
+            "maxItems": 250,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricPointWriteDto"
+            }
+          }
+        },
+        "required": [
+          "points"
+        ]
+      },
+      "SdkCompanyMetricBatchWriteDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Company native currency, e.g. USD. Writes do not convert FX."
+          },
+          "items": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricBatchWriteItemDto"
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "currency",
+          "items"
+        ]
+      },
+      "SdkMetricBatchWriteRequestDto": {
+        "type": "object",
+        "properties": {
+          "companies": {
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "Each company may appear once. Maximum 1000 metric items and 10000 points across the request.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyMetricBatchWriteDto"
+            }
+          }
+        },
+        "required": [
+          "companies"
+        ]
+      },
+      "SdkMetricBatchWriteResponseDto": {
+        "type": "object",
+        "properties": {
+          "companyCount": {
+            "type": "number"
+          },
+          "metricCount": {
+            "type": "number"
+          },
+          "pointsWritten": {
+            "type": "number",
+            "description": "Number of submitted points successfully upserted, including identical values. No point values are echoed."
+          }
+        },
+        "required": [
+          "companyCount",
+          "metricCount",
+          "pointsWritten"
         ]
       },
       "SdkMetricPointsWriteRequestDto": {
