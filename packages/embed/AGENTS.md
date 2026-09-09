@@ -34,7 +34,7 @@ console.log(routeManifest)
 - companies.getDashboard: Get full company dashboard for ONE company
   - Call: `client.companies.getDashboard(123, { currency: 'USD' })`
   - Returns: `CompaniesGetDashboardResponse`
-  - Params: path: id (number); query: currency (string), metricsFrom? (string), transactionLimit? (number), reportLimit? (number)
+  - Params: path: id (number); query: currency (string), metricsFrom? (string), metricsTo? (string), metricsTimeframe? ("Month" | "Quarter" | "Year"), metricsPointLimit? (number), metricTypeNames? (string[]), metricTypeIds? (number[]), conversionStrategy? ("LATEST_FX_RATE" | "ENTITY_DATE_RATE"), transactionLimit? (number), reportLimit? (number)
 - companies.getOne: Get one company available to the SDK consumer
   - Call: `client.companies.getOne(123)`
   - Returns: `CompaniesGetOneResponse`
@@ -60,7 +60,7 @@ console.log(routeManifest)
 - positions.getPortfolioSummary: Get portfolio summary with positions and key metrics per company
   - Call: `client.positions.getPortfolioSummary({ currency: 'USD' })`
   - Returns: `PositionsGetPortfolioSummaryResponse`
-  - Params: query: limit? (number), cursor? (string), companyGroupIds? (number[]), companyIds? (number[]), currency (string), date? (string), metricTypeNames? (string[])
+  - Params: query: limit? (number), cursor? (string), groupBy? ("CompanyGroup" | "Company"), sortBy? ("companyId" | "fairValue" | "invested" | "realized" | "multiple"), sortDirection? ("asc" | "desc"), includeMetrics? (boolean), companyGroupIds? (number[]), companyIds? (number[]), currency (string), date? (string), metricTypeNames? (string[])
 - positions.getCompanyPositions: Get positions for one company
   - Call: `client.positions.getCompanyPositions(123, { currency: 'USD' })`
   - Returns: `PositionsGetCompanyPositionsResponse`
@@ -90,17 +90,17 @@ console.log(routeManifest)
 - metrics.getTypes: List metric types available to the SDK consumer
   - Call: `client.metrics.getTypes({ limit: 123 })`
   - Returns: `MetricsGetTypesResponse`
-  - Params: query: limit? (number), cursor? (string)
+  - Params: query: limit? (number), cursor? (string), nameSearch? (string[])
 - metrics.search: Read metric values for accessible companies, grouped by company
   - Call: `client.metrics.search({})`
   - Returns: `MetricsSearchResponse`
   - Params: body: MetricsSearchBody
 - metrics.compare: Compare metrics across companies
-  - Call: `client.metrics.compare({ metricTypeIds: [1,7] })`
+  - Call: `client.metrics.compare({})`
   - Returns: `MetricsCompareResponse`
   - Params: body: MetricsCompareBody
 - metrics.aggregate: Aggregate metrics across portfolio companies
-  - Call: `client.metrics.aggregate({ metricTypeIds: [1,7], aggregation: "SUM" })`
+  - Call: `client.metrics.aggregate({ aggregation: "SUM" })`
   - Returns: `MetricsAggregateResponse`
   - Params: body: MetricsAggregateBody
 
@@ -109,7 +109,7 @@ console.log(routeManifest)
 - companyReports.list: List published company reports accessible to the caller (metadata only)
   - Call: `client.companyReports.list({ limit: 123 })`
   - Returns: `CompanyReportsListResponse`
-  - Params: query: limit? (number), cursor? (string), companyIds? (number[]), companyGroupIds? (number[]), companyNameSearch? (string[]), timeframe? ("Month" | "Quarter" | "Year"), from? (string), to? (string)
+  - Params: query: limit? (number), cursor? (string), sortBy? ("date" | "publishedAt"), companyIds? (number[]), companyGroupIds? (number[]), companyNameSearch? (string[]), timeframe? ("Month" | "Quarter" | "Year"), from? (string), to? (string)
 - companyReports.getOne: Fetch the full content of a single company report
   - Call: `client.companyReports.getOne(123)`
   - Returns: `CompanyReportsGetOneResponse`

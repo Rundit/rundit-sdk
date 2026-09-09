@@ -61,7 +61,7 @@ Get full company dashboard for ONE company
 - Call: `client.companies.getDashboard(123, { currency: 'USD' })`
 - HTTP: `GET /companies/:id/dashboard`
 - Returns: `CompaniesGetDashboardResponse`
-- Params: path: id (number); query: currency (string), metricsFrom? (string), transactionLimit? (number), reportLimit? (number)
+- Params: path: id (number); query: currency (string), metricsFrom? (string), metricsTo? (string), metricsTimeframe? ("Month" | "Quarter" | "Year"), metricsPointLimit? (number), metricTypeNames? (string[]), metricTypeIds? (number[]), conversionStrategy? ("LATEST_FX_RATE" | "ENTITY_DATE_RATE"), transactionLimit? (number), reportLimit? (number)
 
 ### `companies.getOne`
 
@@ -110,7 +110,7 @@ Get portfolio summary with positions and key metrics per company
 - Call: `client.positions.getPortfolioSummary({ currency: 'USD' })`
 - HTTP: `GET /positions/portfolio/summary`
 - Returns: `PositionsGetPortfolioSummaryResponse`
-- Params: query: limit? (number), cursor? (string), companyGroupIds? (number[]), companyIds? (number[]), currency (string), date? (string), metricTypeNames? (string[])
+- Params: query: limit? (number), cursor? (string), groupBy? ("CompanyGroup" | "Company"), sortBy? ("companyId" | "fairValue" | "invested" | "realized" | "multiple"), sortDirection? ("asc" | "desc"), includeMetrics? (boolean), companyGroupIds? (number[]), companyIds? (number[]), currency (string), date? (string), metricTypeNames? (string[])
 
 ### `positions.getCompanyPositions`
 
@@ -168,7 +168,25 @@ List metric types available to the SDK consumer
 - Call: `client.metrics.getTypes({ limit: 123 })`
 - HTTP: `GET /metrics/types`
 - Returns: `MetricsGetTypesResponse`
-- Params: query: limit? (number), cursor? (string)
+- Params: query: limit? (number), cursor? (string), nameSearch? (string[])
+
+### `metrics.writePointsBatch`
+
+Upsert points for existing metrics across multiple companies
+
+- Call: `client.metrics.writePointsBatch({ companies: [{ companyId: 123, currency: 'USD', items: [{ points: [{ date: '2024-12-31', value: 123, optionValue: null, timeframe: "Month" }] }] }] })`
+- HTTP: `PUT /metrics/points`
+- Returns: `MetricsWritePointsBatchResponse`
+- Params: body: MetricsWritePointsBatchBody
+
+### `metrics.writePoints`
+
+Upsert metric points
+
+- Call: `client.metrics.writePoints(123, { points: [{ date: '2024-12-31', value: 123, optionValue: null, timeframe: "Month" }] })`
+- HTTP: `PUT /metrics/:metricId/points`
+- Returns: `MetricsWritePointsResponse`
+- Params: path: metricId (number); body: MetricsWritePointsBody
 
 ### `metrics.search`
 
@@ -183,7 +201,7 @@ Read metric values for accessible companies, grouped by company
 
 Compare metrics across companies
 
-- Call: `client.metrics.compare({ metricTypeIds: [1,7] })`
+- Call: `client.metrics.compare({})`
 - HTTP: `POST /metrics/compare`
 - Returns: `MetricsCompareResponse`
 - Params: body: MetricsCompareBody
@@ -192,7 +210,7 @@ Compare metrics across companies
 
 Aggregate metrics across portfolio companies
 
-- Call: `client.metrics.aggregate({ metricTypeIds: [1,7], aggregation: "SUM" })`
+- Call: `client.metrics.aggregate({ aggregation: "SUM" })`
 - HTTP: `POST /metrics/aggregate`
 - Returns: `MetricsAggregateResponse`
 - Params: body: MetricsAggregateBody
@@ -206,7 +224,7 @@ List published company reports accessible to the caller (metadata only)
 - Call: `client.companyReports.list({ limit: 123 })`
 - HTTP: `GET /company-reports`
 - Returns: `CompanyReportsListResponse`
-- Params: query: limit? (number), cursor? (string), companyIds? (number[]), companyGroupIds? (number[]), companyNameSearch? (string[]), timeframe? ("Month" | "Quarter" | "Year"), from? (string), to? (string)
+- Params: query: limit? (number), cursor? (string), sortBy? ("date" | "publishedAt"), companyIds? (number[]), companyGroupIds? (number[]), companyNameSearch? (string[]), timeframe? ("Month" | "Quarter" | "Year"), from? (string), to? (string)
 
 ### `companyReports.getOne`
 
