@@ -13,8 +13,8 @@
  *   - identical surface                                             => none (skip)
  * The overall bump is the most severe across all packages.
  *
- * Usage:  node scripts/classify-bump.cjs [latest|rc] [packageKey ...]
- * Prints one of: major | minor | patch | none   (stdout; diagnostics on stderr).
+ * Usage:  node scripts/classify-bump.cjs [latest|rc] [packageKey ...] [--json]
+ * Prints one of major/minor/patch/none, or a per-package object with --json.
  * A package with nothing published at the tag classifies as `minor` (new release line).
  *
  * Run `npm run sdk:generate` first; it writes packages/<dir>/openapi.json.
@@ -26,56 +26,40 @@ const { findBreakingChanges, loadPublishedSpec } = require('./check-compatibilit
 
 const rootDir = path.resolve(__dirname, '..')
 const packagesRootDir = path.join(rootDir, 'packages')
-const versionsPath = path.join(rootDir, 'versions.json')
-const distTag = (process.argv[2] || 'latest').trim()
-const packageKeys = process.argv.slice(3)
-const targets = packageKeys.length > 0 ? packageKeys : Object.keys(sdkPackages)
-
-// Pre-1.0 policy: while a package's stable major is 0 there are no stability
-// guarantees, so a breaking change is published as a minor bump (e.g. the v1 -> v2
-// cut lands as 0.2.0 -> 0.3.0, not 1.0.0). The cap lifts automatically once the
-// package reaches 1.0.0. Set SDK_ALLOW_MAJOR=true to cut a real major (e.g. 1.0.0).
-const versions = fs.existsSync(versionsPath) ? JSON.parse(fs.readFileSync(versionsPath, 'utf8')) : {}
-const allowMajor = process.env.SDK_ALLOW_MAJOR === 'true'
-
 const SEVERITY = { none: 0, patch: 1, minor: 2, major: 3 }
-let bump = 'none'
 
-for (const packageKey of targets) {
-  const config = sdkPackages[packageKey]
+function main() {
+  const args = process.argv.slice(2)
+  const json = args.includes('--json')
+  const positional = args.filter((arg) => arg !== '--json')
+  const distTag = (positional.shift() || 'latest').trim()
+  const packageKeys = positional
+  const targets = packageKeys.length > 0 ? packageKeys : Object.keys(sdkPackages)
+  const packages = {}
+  let bump = 'none'
 
-  if (!config) {
-    console.error(`Unknown SDK package key: ${packageKey}`)
-    process.exit(1)
+  for (const packageKey of targets) {
+    const config = sdkPackages[packageKey]
+
+    if (!config) throw new Error(`Unknown SDK package key: ${packageKey}`)
+
+    const currentSpecPath = path.join(packagesRootDir, config.packageDir, 'openapi.json')
+    if (!fs.existsSync(currentSpecPath)) {
+      throw new Error(`Missing generated SDK spec: ${currentSpecPath}. Run npm run sdk:generate first.`)
+    }
+
+    const currentSpec = JSON.parse(fs.readFileSync(currentSpecPath, 'utf8'))
+    const publishedSpec = loadPublishedSpec(config.packageName, distTag)
+    const level = classify(config.packageName, publishedSpec, currentSpec)
+    packages[packageKey] = level
+
+    console.error(`${config.packageName}: ${level}`)
+    if (SEVERITY[level] > SEVERITY[bump]) bump = level
   }
 
-  const currentSpecPath = path.join(packagesRootDir, config.packageDir, 'openapi.json')
-
-  if (!fs.existsSync(currentSpecPath)) {
-    console.error(`Missing generated SDK spec: ${currentSpecPath}. Run npm run sdk:generate first.`)
-    process.exit(1)
-  }
-
-  const currentSpec = JSON.parse(fs.readFileSync(currentSpecPath, 'utf8'))
-  const publishedSpec = loadPublishedSpec(config.packageName, distTag)
-
-  let level = classify(config.packageName, publishedSpec, currentSpec)
-
-  const currentMajor = Number.parseInt(String(versions[packageKey] || '0.0.0').split('.')[0], 10) || 0
-  if (level === 'major' && currentMajor === 0 && !allowMajor) {
-    console.error(`${config.packageName}: breaking, but pre-1.0 -> capping major to minor (SDK_ALLOW_MAJOR=true to override)`)
-    level = 'minor'
-  }
-
-  console.error(`${config.packageName}: ${level}`)
-
-  if (SEVERITY[level] > SEVERITY[bump]) {
-    bump = level
-  }
+  console.error(`overall bump for @${distTag}: ${bump}`)
+  process.stdout.write(json ? JSON.stringify({ bump, packages }) : bump)
 }
-
-console.error(`overall bump for @${distTag}: ${bump}`)
-process.stdout.write(bump)
 
 function classify(packageName, publishedSpec, currentSpec) {
   if (!publishedSpec) {
@@ -115,4 +99,15 @@ function stableStringify(value) {
     .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`)
 
   return `{${entries.join(',')}}`
+}
+
+module.exports = { classify }
+
+if (require.main === module) {
+  try {
+    main()
+  } catch (error) {
+    console.error(error.message)
+    process.exitCode = 1
+  }
 }

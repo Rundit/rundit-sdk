@@ -15,6 +15,7 @@
 const fs = require('fs')
 const path = require('path')
 const { sdkPackages } = require('./contract.cjs')
+const { bumpStableVersion } = require('./versioning.cjs')
 
 const versionsPath = path.resolve(__dirname, '..', 'versions.json')
 const releaseType = process.argv[2] || process.env.SDK_VERSION_BUMP || 'patch'
@@ -35,7 +36,7 @@ for (const packageKey of targetKeys) {
     process.exit(1)
   }
 
-  versions[packageKey] = bumpVersion(versions[packageKey] || '0.0.0', releaseType)
+  versions[packageKey] = bumpStableVersion(versions[packageKey] || '0.0.0', releaseType)
   console.log(`${packageKey}: ${versions[packageKey]}`)
 }
 
@@ -47,20 +48,4 @@ function loadVersions() {
   }
 
   return JSON.parse(fs.readFileSync(versionsPath, 'utf8'))
-}
-
-function bumpVersion(version, bump) {
-  const [major, minor, patch] = String(version)
-    .split('.')
-    .map((part) => Number.parseInt(part, 10) || 0)
-
-  switch (bump) {
-    case 'major':
-      return `${major + 1}.0.0`
-    case 'minor':
-      return `${major}.${minor + 1}.0`
-    case 'patch':
-    default:
-      return `${major}.${minor}.${patch + 1}`
-  }
 }

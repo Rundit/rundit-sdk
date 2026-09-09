@@ -3,16 +3,16 @@
 Generate, validate, version, and publish the Rundit SDK packages
 (`@rundit-sdk/embed`, `@rundit-sdk/client`) from a single OpenAPI spec.
 
-The spec is **not** authored here — `rundit-back` emits `spec/sdk.openapi.json` (via its
-`write-openapi.ts`, which introspects the live NestJS controllers) and commits it into
-this repo. That spec is the contract. The generated packages live under
-`packages/<packageDir>/` and are **fully regenerated** on every build — never hand-edit
-anything in there. They are committed (on stable releases) as the public source of truth.
+The contract inputs are **not** authored here — `rundit-back` emits
+`spec/sdk.openapi.json` via `write-openapi.ts` and mirrors the reviewed fragments from
+`src/sdk-api/release-notes`. The generated packages live under `packages/<packageDir>/`
+and are **fully regenerated** on every build — never hand-edit anything in there. They
+are committed on stable releases as the public source of truth.
 
 ## The pipeline
 
 ```
-rundit-back  ──commits──▶  spec/sdk.openapi.json
+rundit-back  ──commits──▶  spec/sdk.openapi.json + release-notes/*.json
                                    │
                                    ▼
                            generate-sdk.cjs
@@ -35,6 +35,9 @@ rundit-back  ──commits──▶  spec/sdk.openapi.json
                            generate-sdk.cjs ◀── re-bake version
                                    │
                                    ▼
+                     release-notes.cjs ◀── versioned changelog + GitHub Release
+                                   │
+                                   ▼
                            publish-packages.cjs ◀── npm publish --provenance
 ```
 
@@ -50,9 +53,16 @@ is in [.github/workflows/publish.yml](../.github/workflows/publish.yml).
 
 - `versions.json` stores only **stable** release versions (bumped on `production`).
 - The bump type is **auto-derived** by `classify-bump.cjs` (no manual marker): it diffs
-  the generated surface against `latest` in both directions — breaking ⇒ `major`,
+  the generated surface against stable `latest` in both directions — breaking ⇒ `major`,
   additive ⇒ `minor`, non-structural ⇒ `patch`, identical ⇒ `none`.
 - rc versions are `bump(lastStable, type)-rc.<run_number>`; stable bumps `versions.json`.
+- Every publish requires an unreleased fragment authored under
+  `rundit-back/src/sdk-api/release-notes` and mirrored into `release-notes/`. Its type
+  can raise the computed bump (a breaking pre-1.0 change raises it to minor). RC runs
+  validate and accumulate fragments without rendering release notes. Stable releases
+  compile all pending fragments and record their hashes in `releases/index.json`;
+  released notes are immutable. RC runs read that index from `production`, which
+  prevents a released note on `develop` from being published again.
 
 ## Files in this directory
 
@@ -66,7 +76,9 @@ is in [.github/workflows/publish.yml](../.github/workflows/publish.yml).
 | [check-compatibility.cjs](check-compatibility.cjs) | Diffs the generated `openapi.json` against the spec bundled in the version at `SDK_DIST_TAG` (default `latest`) and fails on breaking changes. Override with `SDK_ALLOW_BREAKING=true` for intentional majors. Exports `findBreakingChanges`/`loadPublishedSpec` for `classify-bump.cjs`. |
 | [classify-bump.cjs](classify-bump.cjs) | Derives the semver bump (`major`/`minor`/`patch`/`none`) from the spec diff vs a dist-tag. Replaces the old manual release-type marker. |
 | [bump-version.cjs](bump-version.cjs) | Bumps `versions.json` (patch/minor/major). Versions live there — not in each `package.json` — because `generate-sdk.cjs` rewrites `package.json` from scratch each run. |
+| [versioning.cjs](versioning.cjs) | Shared strict semver logic used by both RC generation and stable version bumps, including the pre-1.0 policy. |
 | [publish-packages.cjs](publish-packages.cjs) | Publishes each package to npm, skipping any `name@version` already on the registry (safe to re-run after a partial failure). Adds `--provenance` automatically in GitHub Actions and supports dist-tags via `SDK_NPM_DIST_TAG`. |
+| [release-notes.cjs](release-notes.cjs) | Validates release-note fragments and reconciles every candidate bump; for stable releases, writes root/package changelogs and creates idempotent package-specific GitHub Releases. |
 
 ## Adding a new SDK audience
 

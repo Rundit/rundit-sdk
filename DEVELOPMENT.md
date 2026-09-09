@@ -4,20 +4,23 @@ This repo is the **public** home for the Rundit SDK packages (`@rundit-sdk/clien
 `@rundit-sdk/embed`). It owns code generation, version selection, compatibility
 checking, and publishing to npm **with provenance**.
 
-It does **not** define the API. The API lives in `rundit-back` (private). The only
-thing that crosses the boundary is the OpenAPI **spec** — `rundit-back` emits it and
-commits it here. That spec is the contract.
+It does **not** define the API. The API lives in `rundit-back` (private). The OpenAPI
+**spec** and consumer-facing release-note fragments cross the boundary together:
+`rundit-back` emits and commits them here. The spec is the machine contract; the
+fragments explain it to consumers.
 
 ```
 rundit-back (private)                          rundit-sdk (public, this repo)
   src/sdk-api/scripts/write-openapi.ts          spec/sdk.openapi.json   (committed by bot)
+  src/sdk-api/release-notes/*.json              release-notes/*.json   (mirrored by bot)
     │  bootstraps Nest, introspects Swagger             │
     │  → sdk.openapi.json (with x-sdk-audiences)        ▼
-    └── CI on develop / production ───ships spec──►  CI: classify bump (diff vs npm)
-        (GitHub App token; target branch                → generate packages/{embed,client}
-         mirrors the source branch)                      → check-compatibility (breaking gate)
+    └── CI on develop / production ──ships inputs─►  CI: validate release notes
+        (GitHub App token; target branch                → classify bump (diff vs npm)
+         mirrors the source branch)                      → generate + check packages
                                                          → npm publish --provenance (OIDC)
-                                                         → commit regenerated code + versions.json
+                                                         → changelog + GitHub Release
+                                                         → commit stable release state
 ```
 
 Consumers are unaffected by the move: the package names stay `@rundit-sdk/client`
@@ -30,8 +33,9 @@ keeps working unchanged.
   Actions OIDC. `rundit-back` is private and stays private, so provenance is only
   achievable from a separate public repo. (This is why `SDK_PUBLISH_PROVENANCE` was
   forced off in the old `rundit-back` workflow.)
-- **Clear contract.** The spec is a standalone artifact; "rundit-back commits a new
-  spec → this repo diffs, generates, and publishes" is a clean seam.
+- **Clear contract.** The spec and its reviewed change fragments are standalone
+  artifacts; "rundit-back commits new release inputs → this repo validates, generates,
+  and publishes" is a clean seam.
 
 (Note: large generated-code diffs on `rundit-back` PRs were already eliminated by
 gitignoring the generated artifacts there — that is not a driver for this split.)
@@ -51,7 +55,11 @@ scripts/
   check-compatibility.cjs   # breaking-change gate                       — moved
   detect-drift.cjs          # safety net: generated surface vs npm       — moved
   bump-version.cjs          # mutate versions.json                       — moved
+  versioning.cjs            # shared strict stable/rc semver rules
   publish-packages.cjs      # npm publish --provenance                   — moved
+  release-notes.cjs         # notes, changelogs, and GitHub Releases
+release-notes/              # fragments mirrored from rundit-back/src/sdk-api
+releases/index.json         # immutable stable note/version history
 versions.json               # last published stable per package
 .github/workflows/publish.yml
 ```
@@ -72,8 +80,10 @@ publish workflow triggers on pushes to those branches that touch `spec/sdk.opena
 ## Auto-derived version bump (decision 3)
 
 On each run the workflow classifies the change by diffing the incoming spec against the
-spec bundled in the package **currently published at the target dist-tag** (authoritative
-= what consumers actually have; reuses `detect-drift`/`check-compatibility` npm-pack):
+spec bundled in the package currently published at **stable `latest`** (authoritative =
+what stable consumers actually have; reuses `detect-drift`/`check-compatibility`
+`npm pack`). Drift detection still uses the branch's target tag, so `develop` only emits
+a new RC when its candidate contract changed:
 
 - **breaking** (removed path/op/param, type/kind change, request param made required,
   response field no longer required, …) → `major`
@@ -82,23 +92,30 @@ spec bundled in the package **currently published at the target dist-tag** (auth
 - **no surface change** → skip publish (this is what `detect-drift` reports today)
 - non-surface text-only change (descriptions) → `patch` (or skip; configurable)
 
+An unreleased note authored under `rundit-back/src/sdk-api/release-notes` and mirrored
+with the spec is required whenever a package is published. Its declared type is a
+floor for the computed bump, so a documented feature cannot accidentally ship as a
+patch and a documented breaking change keeps its full severity across cumulative RCs.
+RC runs only validate and accumulate these fragments. The production run compiles every
+pending fragment into the stable changelogs and GitHub Releases.
+
 `classify-bump.cjs` reuses the existing comparison engine in `check-compatibility.cjs`
 (it already detects "breaking"); it adds detection of "additive" so the three-way
 classification falls out. The breaking gate still runs and still respects an explicit
-"allow breaking" escape hatch for intentional majors.
+"allow breaking" escape hatch for exceptional manual runs.
 
 **Pre-1.0 cap.** While a package's stable major is `0`, a `major` classification is
 published as a `minor` bump — there are no stability guarantees pre-1.0, so e.g. the
 `/api/v1/` → `/api/v2/` cut lands as `0.2.0` → `0.3.0`, not `1.0.0`. The cap lifts
-automatically once a package reaches `1.0.0`; set `SDK_ALLOW_MAJOR=true` to cut a real
-major. Note this only affects the *version number* — a change that is breaking versus a
-channel's published spec still trips the breaking gate, so the first `production` cut to
-v2 must be a dispatched run with `allow_breaking=true` (safe here: no external consumers
-on `latest` yet).
+automatically once a package reaches `1.0.0`. Pre-1.0 breaking changes are reported by
+the compatibility check and allowed automatically. After 1.0, a breaking release note
+with migration guidance selects a major version and lets the same checked workflow
+publish it automatically.
 
 For `rc`: the prerelease version is `bump(lastStable, type)-rc.<run_number>` (same scheme
-as before, but `type` is now computed). For `latest`: `versions.json` is bumped by `type`
-and committed back.
+as before, but `type` is now computed). For `latest`: `versions.json` is bumped by the
+same type and committed back. With an unchanged candidate contract, production publishes
+the same core version as the RC and simply drops `-rc.<run_number>`.
 
 ## Manual setup checklist (decision 5)
 
@@ -197,8 +214,9 @@ The first stable release is the v1 → v2 cut. `latest` is still `0.2.0` (the ol
    git push origin production                            # no spec change -> no publish
    ```
 
-3. **Merge rundit-back → production.** `ship-sdk-spec.yml` emits the v2 spec and pushes
-   `spec/sdk.openapi.json` to `rundit-sdk:production`, which triggers `publish.yml`:
+3. **Merge rundit-back → production.** Ensure the matching fragment is under
+   `rundit-back/src/sdk-api/release-notes`. `ship-sdk-spec.yml` then emits the v2 spec
+   and mirrors both inputs to `rundit-sdk:production`, which triggers `publish.yml`:
    detect-drift vs `latest` (v1) → differs → publish; breaking gate → pre-1.0 →
    tolerated (warns); classify-bump → `major` capped to `minor` → **`0.3.0`** published
    to `latest` with provenance; generated source committed back to `production`.

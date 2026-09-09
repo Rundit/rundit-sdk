@@ -7,7 +7,9 @@ name: Publish SDK Packages
 on:
   push:
     branches: [develop, production]
-    paths: ['spec/sdk.openapi.json']
+    paths:
+      - 'spec/sdk.openapi.json'
+      - 'release-notes/*.json'
   workflow_dispatch:
     inputs:
       allow_breaking:
@@ -57,6 +59,25 @@ jobs:
             echo 'dist_tag=rc' >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Load stable release state for rc
+        if: steps.channel.outputs.channel == 'rc'
+        shell: bash
+        run: |
+          INDEX="$RUNNER_TEMP/sdk-release-index.json"
+          VERSIONS="$RUNNER_TEMP/sdk-stable-versions.json"
+          if git cat-file -e origin/production:releases/index.json 2>/dev/null; then
+            git show origin/production:releases/index.json > "$INDEX"
+          else
+            echo '[]' > "$INDEX"
+          fi
+          if git cat-file -e origin/production:versions.json 2>/dev/null; then
+            git show origin/production:versions.json > "$VERSIONS"
+          else
+            cp versions.json "$VERSIONS"
+          fi
+          echo "SDK_RELEASE_INDEX_FILE=$INDEX" >> "$GITHUB_ENV"
+          echo "SDK_STABLE_VERSIONS_FILE=$VERSIONS" >> "$GITHUB_ENV"
+
       - name: Generate SDK from committed spec
         run: npm run sdk:generate
 
@@ -72,13 +93,24 @@ jobs:
             exit 0
           fi
           DRIFT="$(node scripts/detect-drift.cjs ${{ steps.channel.outputs.dist_tag }})"
+          PENDING_NOTES="$(node scripts/release-notes.cjs pending)"
           if [[ "$DRIFT" == 'true' ]]; then
             echo 'publish=true' >> "$GITHUB_OUTPUT"
-            echo "Surface differs from @${{ steps.channel.outputs.dist_tag }}; publishing."
+            echo "Surface drift=$DRIFT, pending release notes=$PENDING_NOTES; publishing."
           else
             echo 'publish=false' >> "$GITHUB_OUTPUT"
-            echo "Surface matches @${{ steps.channel.outputs.dist_tag }}; nothing to publish."
+            echo "Surface drift=$DRIFT, pending release notes=$PENDING_NOTES; nothing to publish on this channel."
           fi
+
+      - name: Require consumer release notes
+        if: steps.drift.outputs.publish == 'true'
+        shell: bash
+        run: |
+          npm run release:check
+          [[ "$(node scripts/release-notes.cjs pending)" == 'true' ]] || {
+            echo 'A publishable SDK change requires an unreleased release-notes/*.json file.' >&2
+            exit 1
+          }
 
       - name: Check SDK surface for internal leaks
         if: steps.drift.outputs.publish == 'true'
@@ -88,26 +120,28 @@ jobs:
         if: steps.drift.outputs.publish == 'true'
         run: npm run sdk:check-wire-contract
 
-      - name: Breaking-change gate (vs this channel's published spec)
-        if: steps.drift.outputs.publish == 'true'
-        run: npm run sdk:check-compatibility
-        env:
-          # Protect the consumers already on this channel. A v1 -> v2 style cut is
-          # breaking vs latest and requires allow_breaking on a dispatched release.
-          SDK_DIST_TAG: ${{ steps.channel.outputs.dist_tag }}
-          SDK_ALLOW_BREAKING: ${{ github.event_name == 'workflow_dispatch' && inputs.allow_breaking || 'false' }}
-
       - name: Classify version bump
         id: bump
         if: steps.drift.outputs.publish == 'true'
         shell: bash
-        # TRANSITIONAL: pinned to `patch` while `latest` is still the v1 line (0.2.0).
-        # classify-bump compares vs `latest` and over-reports (breaking -> minor) until
-        # v2 is on latest. With versions.json at 0.3.0 this yields the 0.3.x line —
-        # rc = 0.3.1-rc.N, first stable = 0.3.1 — which also sidesteps the legacy
-        # 0.3.0-rc.* collisions. Restore `node scripts/classify-bump.cjs latest` once
-        # latest is on v2.
-        run: echo "type=patch" >> "$GITHUB_OUTPUT"
+        run: |
+          # Both channels classify against the stable contract. This makes every RC
+          # a preview of the exact version production will publish for the same spec.
+          CLASSIFICATION="$(node scripts/classify-bump.cjs latest --json)"
+          AUTOMATIC="$(node -p 'JSON.parse(process.argv[1]).bump' "$CLASSIFICATION")"
+          TYPE="$(node scripts/release-notes.cjs bump "$CLASSIFICATION")"
+          echo "Automatic surface bump=$AUTOMATIC; release-note-aware bump=$TYPE"
+          echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+
+      - name: Verify compatibility classification
+        if: steps.drift.outputs.publish == 'true'
+        run: npm run sdk:check-compatibility
+        env:
+          SDK_DIST_TAG: latest
+          # A validated breaking note makes the computed bump major after 1.0, so
+          # that release can proceed automatically. The manual escape hatch remains
+          # available for comparator gaps and still receives a major note-driven bump.
+          SDK_ALLOW_BREAKING: ${{ steps.bump.outputs.type == 'major' || (github.event_name == 'workflow_dispatch' && inputs.allow_breaking) || 'false' }}
 
       - name: Publish rc (develop)
         if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'rc'
@@ -123,12 +157,14 @@ jobs:
           SDK_NPM_DIST_TAG: rc
 
       - name: Publish release (production)
+        id: publish_release
         if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
         # Bump versions.json by the classified type, bake it into the packages, publish
         # to the latest tag, then commit the authoritative generated source below.
         run: |
           npm run sdk:version:bump -- ${{ steps.bump.outputs.type }}
           npm run sdk:generate
+          npm run release:prepare -- latest
           npm run sdk:publish
 
       - name: Commit released SDK source
@@ -137,10 +173,21 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add packages versions.json
+          git add packages versions.json CHANGELOG.md releases/index.json
           if git diff --cached --quiet; then
             echo 'No source changes to commit.'
             exit 0
           fi
           git commit -m "chore: publish SDK packages [skip ci]"
           git push
+
+      - name: Publish stable GitHub releases
+        if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
+        run: npm run release:github
+
+      - name: Reconcile stable GitHub releases
+        # A no-drift manual dispatch can retry GitHub release creation after npm
+        # publishing without bumping or republishing the packages. Never create a
+        # release for a new version unless its npm publication completed.
+        if: ${{ always() && !cancelled() && steps.channel.outputs.channel == 'release' && (steps.drift.outputs.publish != 'true' || steps.publish_release.outcome == 'success') }}
+        run: npm run release:sync-github

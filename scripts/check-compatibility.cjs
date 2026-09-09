@@ -55,7 +55,10 @@ if (require.main === module) {
   // the gate even pre-1.0; SDK_ALLOW_BREAKING=true allows it even post-1.0.
   const enforcePre1 = process.env.SDK_ENFORCE_BREAKING === 'true'
   const distTag = process.env.SDK_DIST_TAG || 'latest'
-  const versionsPath = path.join(rootDir, 'versions.json')
+  // RC branches deliberately keep an older versions.json. CI points this at the
+  // production branch's file so post-1.0 breaking changes cannot inherit a stale
+  // pre-1.0 exemption.
+  const versionsPath = process.env.SDK_STABLE_VERSIONS_FILE || path.join(rootDir, 'versions.json')
   const versions = fs.existsSync(versionsPath) ? JSON.parse(fs.readFileSync(versionsPath, 'utf8')) : {}
 
   const fatal = []

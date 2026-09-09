@@ -8,6 +8,7 @@
  *   - dist/index.js + dist/index.d.ts (runtime client + types)
  *   - openapi.json (audience-filtered spec, used by check-compatibility.cjs)
  *   - package.json, README.md, AGENTS.md, ai-manifest.json
+ *   - CHANGELOG.md in stable packages, written by release-notes.cjs after generation
  *   - skills/<skill-dir>/SKILL.md (agent-skill metadata)
  *
  * Why a hand-rolled generator instead of openapi-generator/orval/etc:
@@ -27,6 +28,11 @@ const fs = require('fs')
 const path = require('path')
 const { execFileSync } = require('child_process')
 const { sdkPackages } = require('./contract.cjs')
+const {
+  compareStableVersions,
+  createPrereleaseVersion,
+  normalizeStableVersion,
+} = require('./versioning.cjs')
 
 const rootDir = path.resolve(__dirname, '..')
 const packagesRootDir = path.join(rootDir, 'packages')
@@ -102,11 +108,11 @@ function resolvePackageVersion(packageKey, version) {
     return version
   }
 
-  const prereleaseIteration = sanitizePrereleaseIdentifier(process.env.SDK_PRERELEASE_ITERATION || '0')
+  const prereleaseIteration = process.env.SDK_PRERELEASE_ITERATION || '0'
   const prereleaseBump = process.env.SDK_PRERELEASE_BUMP || 'patch'
   const stableVersion = resolvePrereleaseBaseline(packageKey, version)
 
-  return `${bumpStableVersion(stableVersion, prereleaseBump)}-${sanitizePrereleaseIdentifier(prereleaseChannel)}.${prereleaseIteration}`
+  return createPrereleaseVersion(stableVersion, prereleaseBump, prereleaseChannel, prereleaseIteration)
 }
 
 /**
@@ -162,49 +168,6 @@ function readPublishedVersion(packageName, tag) {
   }
 }
 
-/** Numeric compare of two x.y.z strings. Returns >0 when `left` is newer. */
-function compareStableVersions(left, right) {
-  const leftParts = left.split('.').map((part) => Number.parseInt(part, 10) || 0)
-  const rightParts = right.split('.').map((part) => Number.parseInt(part, 10) || 0)
-
-  for (let index = 0; index < 3; index += 1) {
-    if (leftParts[index] !== rightParts[index]) {
-      return leftParts[index] - rightParts[index]
-    }
-  }
-
-  return 0
-}
-
-function normalizeStableVersion(version) {
-  return String(version).split('-')[0]
-}
-
-function bumpStableVersion(version, bump) {
-  const [major, minor, patch] = normalizeStableVersion(version)
-    .split('.')
-    .map((part) => Number.parseInt(part, 10) || 0)
-
-  switch (bump) {
-    case 'major':
-      return `${major + 1}.0.0`
-    case 'minor':
-      return `${major}.${minor + 1}.0`
-    case 'patch':
-    default:
-      return `${major}.${minor}.${patch + 1}`
-  }
-}
-
-function sanitizePrereleaseIdentifier(value) {
-  return (
-    String(value)
-      .trim()
-      .replace(/[^0-9A-Za-z-]+/g, '-')
-      .replace(/^-+|-+$/g, '') || '0'
-  )
-}
-
 function createAudienceOpenApiSpec(spec, audience) {
   const filteredPaths = Object.fromEntries(
     Object.entries(spec.paths || {})
@@ -230,6 +193,8 @@ function createAudienceOpenApiSpec(spec, audience) {
 }
 
 function createPackageJson(packageConfig, version) {
+  const files = ['dist', 'README.md', 'AGENTS.md', 'ai-manifest.json', 'openapi.json', 'skills']
+  if (!version.includes('-')) files.splice(2, 0, 'CHANGELOG.md')
   return {
     name: packageConfig.packageName,
     version,
@@ -252,7 +217,7 @@ function createPackageJson(packageConfig, version) {
         types: './dist/index.d.ts',
       },
     },
-    files: ['dist', 'README.md', 'AGENTS.md', 'ai-manifest.json', 'openapi.json', 'skills'],
+    files,
     publishConfig: {
       access: 'public',
     },

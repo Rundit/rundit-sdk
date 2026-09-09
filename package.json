@@ -13,7 +13,13 @@
     "sdk:detect-drift": "node scripts/detect-drift.cjs",
     "sdk:check-surface": "node scripts/check-sdk-surface.cjs",
     "sdk:check-wire-contract": "node --test wire-test.mjs",
-    "sdk:publish": "node scripts/publish-packages.cjs"
+    "sdk:publish": "node scripts/publish-packages.cjs",
+    "release:check": "node scripts/release-notes.cjs check",
+    "release:bump": "node scripts/release-notes.cjs bump",
+    "release:prepare": "node scripts/release-notes.cjs prepare",
+    "release:github": "node scripts/release-notes.cjs publish-github",
+    "release:sync-github": "node scripts/release-notes.cjs sync-github",
+    "test": "node --test test/*.test.cjs"
   },
   "devDependencies": {
     "typescript": "^5.6.0"
