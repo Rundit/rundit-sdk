@@ -30,7 +30,7 @@ await client.companies.getDashboards({ companyIds: [123], currency: 'USD' })
 
 ## Guidance
 
-- Namespaces: companies, companyGroups, positions, transactions, metrics, companyReports
+- Namespaces: companies, companyGroups, positions, transactions, metrics, metricTemplates, companyReports
 - Follow the generated DTO types for identifiers; company, company group, and transaction ids are numeric today, while aggregated position summaries do not expose a standalone `id`
 - Positions endpoints require a `currency` query parameter
 - Generated package artifacts live under `dist/`; agent skill metadata lives under `skills/`

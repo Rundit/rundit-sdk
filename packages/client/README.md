@@ -163,16 +163,25 @@ Get transactions for multiple companies
 
 ### `metrics.getTypes`
 
-List metric types available to the SDK consumer
+Search metric types available to the SDK consumer
 
 - Call: `client.metrics.getTypes({ limit: 123 })`
 - HTTP: `GET /metrics/types`
 - Returns: `MetricsGetTypesResponse`
-- Params: query: limit? (number), cursor? (string), nameSearch? (string[])
+- Params: query: limit? (number), cursor? (string), origin? ("Predefined" | "UserDefined"), nameSearch? (string[])
+
+### `metrics.createType`
+
+Create a VC-owned custom metric type
+
+- Call: `client.metrics.createType({ name: 'example', valueType: "numeric", aggMethod: "SUM", summaryAggregationMethods: ["SUM"] })`
+- HTTP: `POST /metrics/types`
+- Returns: `MetricsCreateTypeResponse`
+- Params: body: MetricsCreateTypeBody
 
 ### `metrics.writePointsBatch`
 
-Upsert points for existing metrics across multiple companies
+Deprecated: upsert points for existing metrics across multiple companies
 
 - Call: `client.metrics.writePointsBatch({ companies: [{ companyId: 123, currency: 'USD', items: [{ points: [{ date: '2024-12-31', value: 123, optionValue: null, timeframe: "Month" }] }] }] })`
 - HTTP: `PUT /metrics/points`
@@ -187,6 +196,15 @@ Upsert metric points
 - HTTP: `PUT /metrics/:metricId/points`
 - Returns: `MetricsWritePointsResponse`
 - Params: path: metricId (number); body: MetricsWritePointsBody
+
+### `metrics.deletePoints`
+
+Delete selected metric points
+
+- Call: `client.metrics.deletePoints(123, { points: [{ date: '2024-12-31', timeframe: "Month" }] })`
+- HTTP: `DELETE /metrics/:metricId/points`
+- Returns: `MetricsDeletePointsResponse`
+- Params: path: metricId (number); body: MetricsDeletePointsBody
 
 ### `metrics.search`
 
@@ -214,6 +232,79 @@ Aggregate metrics across portfolio companies
 - HTTP: `POST /metrics/aggregate`
 - Returns: `MetricsAggregateResponse`
 - Params: body: MetricsAggregateBody
+
+### `metrics.import`
+
+Import metrics across many companies in one call
+
+- Call: `client.metrics.import({ companies: [{ companyId: 123, currency: 'USD', items: [{ points: [{ date: '2024-12-31', value: 123, optionValue: null, timeframe: "Month" }] }] }] })`
+- HTTP: `POST /metrics/import`
+- Returns: `MetricsImportResponse`
+- Params: body: MetricsImportBody
+
+### `metrics.getTypeUsage`
+
+Get custom metric type usage
+
+- Call: `client.metrics.getTypeUsage(123)`
+- HTTP: `GET /metrics/types/:metricTypeId/usage`
+- Returns: `MetricsGetTypeUsageResponse`
+- Params: path: metricTypeId (number)
+
+### `metrics.deleteType`
+
+Delete an unused custom metric type
+
+- Call: `client.metrics.deleteType(123)`
+- HTTP: `DELETE /metrics/types/:metricTypeId`
+- Returns: `MetricsDeleteTypeResponse`
+- Params: path: metricTypeId (number)
+
+### `metrics.delete`
+
+Delete a company metric row and its data
+
+- Call: `client.metrics.delete(123)`
+- HTTP: `DELETE /metrics/:metricId`
+- Returns: `MetricsDeleteResponse`
+- Params: path: metricId (number)
+
+## metricTemplates
+
+### `metricTemplates.get`
+
+Get the VC metric template
+
+- Call: `client.metricTemplates.get()`
+- HTTP: `GET /metrics/templates`
+- Returns: `MetricTemplatesGetResponse`
+
+### `metricTemplates.createEntry`
+
+Request a metric through the VC template
+
+- Call: `client.metricTemplates.createEntry('123', { metricTypeId: 123, hasForecast: true, hasBudget: true, companyFilter: [{ type: "all" }] })`
+- HTTP: `POST /metrics/templates/:templateId/entries`
+- Returns: `MetricTemplatesCreateEntryResponse`
+- Params: path: templateId (string); body: MetricTemplatesCreateEntryBody
+
+### `metricTemplates.updateEntry`
+
+Update a metric template entry
+
+- Call: `client.metricTemplates.updateEntry('123', '123', { metricTypeId: 123, hasForecast: true, hasBudget: true, companyFilter: [{ type: "all" }] })`
+- HTTP: `PUT /metrics/templates/:templateId/entries/:entryId`
+- Returns: `MetricTemplatesUpdateEntryResponse`
+- Params: path: templateId (string), entryId (string); body: MetricTemplatesUpdateEntryBody
+
+### `metricTemplates.deleteEntry`
+
+Stop requesting a metric through the template
+
+- Call: `client.metricTemplates.deleteEntry('123', '123')`
+- HTTP: `DELETE /metrics/templates/:templateId/entries/:entryId`
+- Returns: `MetricTemplatesDeleteEntryResponse`
+- Params: path: templateId (string), entryId (string)
 
 ## companyReports
 

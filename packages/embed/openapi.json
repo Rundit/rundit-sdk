@@ -1330,6 +1330,18 @@
             }
           },
           {
+            "name": "origin",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Predefined",
+                "UserDefined"
+              ]
+            }
+          },
+          {
             "name": "nameSearch",
             "required": false,
             "in": "query",
@@ -1368,7 +1380,7 @@
             "sdk-client-api-key": []
           }
         ],
-        "summary": "List metric types available to the SDK consumer",
+        "summary": "Search metric types available to the SDK consumer",
         "tags": [
           "sdk-metrics"
         ],
@@ -1385,7 +1397,7 @@
     },
     "/api/v2/sdk/metrics": {
       "post": {
-        "description": "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Each entry embeds a metric type *summary* (id, name, shortName, valueType, unit, plus option/range config when relevant); the full definition lives on /metrics/types. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames` — case-insensitive exact match on either the full name or the `shortName`, so \"MRR\" and \"MRR - Monthly Recurring Revenue\" both work), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Use `pointLimit` to keep only the most recent N points per metric (`pointLimit: 1` = latest dated point; set `to` to today to exclude future values) — without it every historical point is returned, which can be very large across a portfolio. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.",
+        "description": "Row existence does not imply a current investor request: removing template targeting preserves reported data. Use metricTemplates.get and its company/group targeting to inspect request state; entries outside full targeting visibility are omitted, so absence from a restricted template response is not proof of no request. Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Each entry embeds a metric type *summary* (id, name, shortName, valueType, unit, plus option/range config when relevant); the full definition lives on /metrics/types. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames` — case-insensitive exact match on either the full name or the `shortName`, so \"MRR\" and \"MRR - Monthly Recurring Revenue\" both work), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Use `pointLimit` to keep only the most recent N points per metric (`pointLimit: 1` = latest dated point; set `to` to today to exclude future values) — without it every historical point is returned, which can be very large across a portfolio. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.",
         "operationId": "metrics.search",
         "parameters": [],
         "requestBody": {
@@ -2633,6 +2645,33 @@
           "optionValue"
         ]
       },
+      "SdkMetricSubRowDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Writable metric row id. Use with metrics.writePoints or metrics.deletePoints."
+          },
+          "flavor": {
+            "type": "string",
+            "enum": [
+              "forecast",
+              "budget"
+            ]
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricPointDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "flavor",
+          "points"
+        ]
+      },
       "SdkCompanyMetricDto": {
         "type": "object",
         "properties": {
@@ -2653,6 +2692,13 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/SdkMetricPointDto"
+            }
+          },
+          "subRows": {
+            "description": "Existing forecast/budget rows with writable ids and filtered points, including empty rows. Actual values remain in points.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricSubRowDto"
             }
           }
         },
@@ -5247,6 +5293,20 @@
               }
             ]
           },
+          "summaryAggregationMethods": {
+            "type": "array",
+            "description": "Enabled aggregations across portfolio companies.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "SUM",
+                "AVG",
+                "MEDIAN",
+                "COUNT_POSITIVES",
+                "AVG_POSITIVES_PERCENTAGE"
+              ]
+            }
+          },
           "description": {
             "type": "string",
             "description": "Free-form description of what the metric represents.",
@@ -5274,6 +5334,7 @@
         "required": [
           "id",
           "name",
+          "summaryAggregationMethods",
           "aggMethod"
         ]
       },
@@ -5462,6 +5523,41 @@
           "points"
         ]
       },
+      "SdkMetricPointDeleteDto": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "Reporting period date (YYYY-MM-DD), on the first day of the month."
+          },
+          "timeframe": {
+            "type": "string",
+            "enum": [
+              "Month",
+              "Quarter",
+              "Year"
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "timeframe"
+        ]
+      },
+      "SdkMetricPointsDeleteRequestDto": {
+        "type": "object",
+        "properties": {
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricPointDeleteDto"
+            }
+          }
+        },
+        "required": [
+          "points"
+        ]
+      },
       "MetricSearchDto": {
         "type": "object",
         "properties": {
@@ -5474,6 +5570,11 @@
           "cursor": {
             "type": "string",
             "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+          },
+          "includePoints": {
+            "type": "boolean",
+            "default": true,
+            "description": "Set false to enumerate metric ids, types, units and forecast/budget rows without loading or computing point histories. Returns empty points arrays. Date/timeframe/pointLimit filters only apply when points are included."
           },
           "companyIds": {
             "description": "Restrict results to these companies. Defaults to all companies the caller can access.",
@@ -6011,6 +6112,532 @@
         "required": [
           "data",
           "meta"
+        ]
+      },
+      "SdkCreateMetricOptionDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "isPositive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "value",
+          "isPositive"
+        ]
+      },
+      "SdkCreateMetricOptionsDto": {
+        "type": "object",
+        "properties": {
+          "options": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCreateMetricOptionDto"
+            }
+          }
+        },
+        "required": [
+          "options"
+        ]
+      },
+      "SdkCreateMetricRangeDto": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number"
+          },
+          "step": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "min",
+          "max",
+          "step"
+        ]
+      },
+      "SdkCreateMetricTypeDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Name of the custom metric definition. Does not create company rows."
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "valueType": {
+            "type": "string",
+            "enum": [
+              "numeric",
+              "option"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "Percentage",
+              "Currency",
+              "Number",
+              "Second",
+              "Minute",
+              "Hour",
+              "Day",
+              "Week",
+              "Month",
+              "Quarter",
+              "Year"
+            ],
+            "nullable": true,
+            "description": "Required for numeric metrics; omit for option metrics."
+          },
+          "aggMethod": {
+            "type": "string",
+            "enum": [
+              "SUM",
+              "LAST_AVAILABLE",
+              "AVG",
+              "NONE"
+            ],
+            "description": "Across-period aggregation. Option and ranged metrics require NONE."
+          },
+          "summaryAggregationMethods": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "SUM",
+                "AVG",
+                "MEDIAN",
+                "COUNT_POSITIVES",
+                "AVG_POSITIVES_PERCENTAGE"
+              ]
+            }
+          },
+          "optionConfig": {
+            "$ref": "#/components/schemas/SdkCreateMetricOptionsDto"
+          },
+          "rangeConfig": {
+            "$ref": "#/components/schemas/SdkCreateMetricRangeDto"
+          }
+        },
+        "required": [
+          "name",
+          "valueType",
+          "aggMethod",
+          "summaryAggregationMethods"
+        ]
+      },
+      "SdkMetricImportItemDto": {
+        "type": "object",
+        "properties": {
+          "metricTypeId": {
+            "type": "number",
+            "description": "Use exactly one of metricTypeId, metricTypeName or createType."
+          },
+          "metricTypeName": {
+            "type": "string",
+            "description": "Use exactly one of metricTypeId, metricTypeName or createType. Exact case-insensitive name or shortName. Unknown or ambiguous names fail; no fuzzy writes."
+          },
+          "createType": {
+            "description": "Use exactly one of metricTypeId, metricTypeName or createType. Create only if no accessible type matches the name and provisionMissing is true. Retries reuse a VC-owned full-name match with identical configuration; mismatches return a conflict.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SdkCreateMetricTypeDto"
+              }
+            ]
+          },
+          "flavor": {
+            "type": "string",
+            "enum": [
+              "actual",
+              "forecast",
+              "budget"
+            ],
+            "default": "actual"
+          },
+          "points": {
+            "minItems": 1,
+            "maxItems": 250,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricPointWriteDto"
+            }
+          }
+        },
+        "description": "Supply exactly one of metricTypeId, metricTypeName or createType. Persisted type IDs identify distinct targets even when names match.",
+        "required": [
+          "points"
+        ]
+      },
+      "SdkCompanyMetricImportDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "number",
+            "description": "One accessible portfolio company. New template targeting adds this company only; existing targeting is never replaced."
+          },
+          "currency": {
+            "type": "string",
+            "description": "Source currency, e.g. USD. Must equal company native currency. No implicit FX conversion on writes."
+          },
+          "items": {
+            "minItems": 1,
+            "maxItems": 50,
+            "description": "Each item must supply exactly one of metricTypeId, metricTypeName or createType, plus flavor and points.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricImportItemDto"
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "currency",
+          "items"
+        ]
+      },
+      "SdkMetricImportDto": {
+        "type": "object",
+        "properties": {
+          "provisionMissing": {
+            "type": "boolean",
+            "default": true,
+            "description": "Allow creation of missing definitions and template-requested rows. Set false for existing-row-only writes: missing types or flavors fail without provisioning. Creating definitions still requires createType explicitly. Default true preserves the provisioning workflow."
+          },
+          "companies": {
+            "minItems": 1,
+            "maxItems": 100,
+            "description": "Companies to import, each with its native source currency and metric items. Each company may appear once. Maximum 1000 metric items and 10000 points across the request. Access and currency are checked for every company before any writes.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyMetricImportDto"
+            }
+          },
+          "onConflict": {
+            "type": "string",
+            "enum": [
+              "reject",
+              "overwrite"
+            ],
+            "default": "reject",
+            "description": "Default rejects an item if any stored point differs. Identical values are skipped on retries. overwrite explicitly replaces conflicting stored values."
+          }
+        },
+        "required": [
+          "companies"
+        ]
+      },
+      "SdkMetricImportResultDto": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "applied",
+              "unchanged",
+              "error"
+            ]
+          },
+          "metricTypeId": {
+            "type": "number"
+          },
+          "metricId": {
+            "type": "number",
+            "description": "Resolved writable actual, forecast or budget row id."
+          },
+          "templateEntryId": {
+            "type": "string"
+          },
+          "flavor": {
+            "type": "string",
+            "enum": [
+              "actual",
+              "forecast",
+              "budget"
+            ]
+          },
+          "pointsWritten": {
+            "type": "number"
+          },
+          "pointsUnchanged": {
+            "type": "number"
+          },
+          "actions": {
+            "description": "Committed actions. Failed items roll back their database changes and return no actions or resource ids.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "templateCompanyIds": {
+            "description": "Companies targeted by a template change. Empty if no template mutation is needed. Forecast/budget requests may expand for existing targets.",
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "errorStatus": {
+            "type": "number"
+          },
+          "error": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "status",
+          "flavor",
+          "pointsWritten",
+          "pointsUnchanged",
+          "actions",
+          "templateCompanyIds"
+        ]
+      },
+      "SdkCompanyMetricImportResponseDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "success": {
+            "type": "boolean",
+            "description": "True only if every item succeeded."
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricImportResultDto"
+            }
+          }
+        },
+        "required": [
+          "companyId",
+          "currency",
+          "success",
+          "results"
+        ]
+      },
+      "SdkMetricImportResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "True only if every item for every company succeeded."
+          },
+          "pointsWritten": {
+            "type": "number",
+            "description": "Total points written across all companies. No point values are echoed."
+          },
+          "pointsUnchanged": {
+            "type": "number"
+          },
+          "companies": {
+            "description": "Company results in request order; each company contains metric results in item order.",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkCompanyMetricImportResponseDto"
+            }
+          }
+        },
+        "required": [
+          "success",
+          "pointsWritten",
+          "pointsUnchanged",
+          "companies"
+        ]
+      },
+      "SdkMetricUsageCompanyDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "SdkMetricTypeUsageDto": {
+        "type": "object",
+        "properties": {
+          "usedInTemplate": {
+            "type": "boolean"
+          },
+          "companyCount": {
+            "type": "number"
+          },
+          "companies": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkMetricUsageCompanyDto"
+            }
+          }
+        },
+        "required": [
+          "usedInTemplate",
+          "companyCount",
+          "companies"
+        ]
+      },
+      "SdkDeletedMetricTypeDto": {
+        "type": "object",
+        "properties": {
+          "metricTypeId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "metricTypeId"
+        ]
+      },
+      "SdkTemplateCompanyFilterDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "all",
+              "group",
+              "company"
+            ],
+            "description": "Selectors are OR-combined. all means the whole VC portfolio and requires VC admin access."
+          },
+          "value": {
+            "type": "number",
+            "description": "Company or company-group id; omit for all."
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "SdkTemplateEntryDto": {
+        "type": "object",
+        "properties": {
+          "metricTypeId": {
+            "type": "number",
+            "description": "Accessible predefined or VC-owned custom type. Cannot change on update."
+          },
+          "hasForecast": {
+            "type": "boolean"
+          },
+          "hasBudget": {
+            "type": "boolean"
+          },
+          "companyFilter": {
+            "minItems": 1,
+            "maxItems": 250,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkTemplateCompanyFilterDto"
+            }
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0
+          },
+          "id": {
+            "type": "string"
+          },
+          "metricTemplateId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "metricTypeId",
+          "hasForecast",
+          "hasBudget",
+          "companyFilter",
+          "id",
+          "metricTemplateId"
+        ]
+      },
+      "SdkMetricTemplateDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkTemplateEntryDto"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "entries"
+        ]
+      },
+      "SdkTemplateEntryWriteDto": {
+        "type": "object",
+        "properties": {
+          "metricTypeId": {
+            "type": "number",
+            "description": "Accessible predefined or VC-owned custom type. Cannot change on update."
+          },
+          "hasForecast": {
+            "type": "boolean"
+          },
+          "hasBudget": {
+            "type": "boolean"
+          },
+          "companyFilter": {
+            "minItems": 1,
+            "maxItems": 250,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkTemplateCompanyFilterDto"
+            }
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "metricTypeId",
+          "hasForecast",
+          "hasBudget",
+          "companyFilter"
+        ]
+      },
+      "SdkDeletedMetricDto": {
+        "type": "object",
+        "properties": {
+          "metricId": {
+            "type": "number"
+          },
+          "companyId": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "metricId",
+          "companyId"
         ]
       },
       "SdkReportSectionType": {

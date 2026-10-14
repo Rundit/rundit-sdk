@@ -162,12 +162,12 @@ Get transactions for multiple companies
 
 ### `metrics.getTypes`
 
-List metric types available to the SDK consumer
+Search metric types available to the SDK consumer
 
 - Call: `client.metrics.getTypes({ limit: 123 })`
 - HTTP: `GET /metrics/types`
 - Returns: `MetricsGetTypesResponse`
-- Params: query: limit? (number), cursor? (string), nameSearch? (string[])
+- Params: query: limit? (number), cursor? (string), origin? ("Predefined" | "UserDefined"), nameSearch? (string[])
 
 ### `metrics.search`
 

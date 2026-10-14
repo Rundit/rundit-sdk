@@ -518,7 +518,7 @@ const routeManifest = {
     "getTypes": {
       "method": "GET",
       "path": "/metrics/types",
-      "summary": "List metric types available to the SDK consumer",
+      "summary": "Search metric types available to the SDK consumer",
       "description": "Returns predefined metric types plus user-defined metric types scoped to the caller — VC group custom types for VC users, company custom types for company users. Each entry carries the metric shape needed to interpret values: `valueType` is `\"numeric\"` (read `point.value` as a number; may carry `rangeConfig` with min/max/step for ranged metrics) or `\"option\"` (read `point.optionValue` as a string from `optionConfig.options[]` — this is how boolean / yes-no metrics are encoded, as two options typically labelled \"Yes\"/\"No\"). `unit.unit` describes the measurement (`Currency`, `Percentage`, `Number`, time units, ...); `unit.currencyCode` is intentionally null on this endpoint because monetary types resolve their concrete currency per company — call /metrics to receive `unit.currencyCode` populated with each company's native currency, or pass `currency` to convert all monetary metrics to a chosen target. Filter with `nameSearch` (case-insensitive substring on name or `shortName`, OR across an array) to find a few types without paging the whole catalogue — e.g. `nameSearch=[\"mrr\",\"burn\"]`. Ordered by metric type id ascending.",
       "exampleCall": "client.metrics.getTypes({ limit: 123 })",
       "responseType": "MetricsGetTypesResponse",
@@ -537,6 +537,12 @@ const routeManifest = {
           "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
+          "name": "origin",
+          "required": false,
+          "type": "\"Predefined\" | \"UserDefined\"",
+          "description": null
+        },
+        {
           "name": "nameSearch",
           "required": false,
           "type": "string[]",
@@ -544,11 +550,21 @@ const routeManifest = {
         }
       ]
     },
+    "createType": {
+      "method": "POST",
+      "path": "/metrics/types",
+      "summary": "Create a VC-owned custom metric type",
+      "description": "Creates a definition only, not company rows. Add the returned type to a metric template to request it from companies. Ownership is derived from the API key user. Numeric, ranged numeric and option metrics are supported; formulas are not.",
+      "exampleCall": "client.metrics.createType({ name: 'example', valueType: \"numeric\", aggMethod: \"SUM\", summaryAggregationMethods: [\"SUM\"] })",
+      "responseType": "MetricsCreateTypeResponse",
+      "pathParams": [],
+      "queryParams": []
+    },
     "writePointsBatch": {
       "method": "PUT",
       "path": "/metrics/points",
-      "summary": "Upsert points for existing metrics across multiple companies",
-      "description": "Preferred for bulk writes: companies contains companyId, native currency and metric items selected by type id or exact name/shortName, optionally flavor actual/forecast/budget. No instance-id discovery needed. Upserts replace existing values like writePoints. Returns only company, metric and point counts. Does not create metric types, rows or template requests; missing rows return 404. VC API-key callers only; metrics:write and company edit permissions are required for every company. All company access, currencies, rows and point values are checked before writes begin. Limits: 100 companies, 50 items per company, 1000 items and 10000 points total, 250 points per item. Duplicate companies/rows/periods are rejected. Set exactly one of value or optionValue and the other to null. No implicit deletion or FX conversion. Unexpected persistence failures may leave earlier companies written; replaying the same values is safe.",
+      "summary": "Deprecated: upsert points for existing metrics across multiple companies",
+      "description": "@deprecated Use metrics.import; this operation will be removed in a future release.\n\nDeprecated; retained for compatibility and scheduled for future removal. Prefer metrics.import. For existing-row upserts use onConflict=overwrite and provisionMissing=false. Import writes immediately; requires metrics:write, metric-types:read and metric-templates:read; uses period-start dates; returns per-item results and can partially succeed, so inspect success and item statuses. This endpoint retains its existing behavior: companies contains companyId, native currency and metric items selected by type id or exact name/shortName, optionally flavor actual/forecast/budget. Upserts replace existing values. Returns company, metric and point counts. Does not create metric types, rows or template requests; missing rows return 404. VC API-key callers only; metrics:write and metric-value edit access are required for every company. Non-managed companies must explicitly grant investor metric editing. All access, currencies, rows and values are checked before writes begin. Limits: 100 companies, 50 items per company, 1000 items and 10000 points total, 250 points per item. Duplicate companies/rows/periods are rejected. Set exactly one of value or optionValue and the other to null. No deletion or FX conversion. Unexpected persistence failures may leave earlier companies written; replaying the same values is safe.",
       "exampleCall": "client.metrics.writePointsBatch({ companies: [{ companyId: 123, currency: 'USD', items: [{ points: [{ date: '2024-12-31', value: 123, optionValue: null, timeframe: \"Month\" }] }] }] })",
       "responseType": "MetricsWritePointsBatchResponse",
       "pathParams": [],
@@ -558,9 +574,25 @@ const routeManifest = {
       "method": "PUT",
       "path": "/metrics/:metricId/points",
       "summary": "Upsert metric points",
-      "description": "Writes points for one metric instance. Set exactly one of value or optionValue according to the metric type and set the other field to null.",
+      "description": "Writes points for one metric instance. Requires metric-value edit access; non-managed companies must explicitly grant investor metric editing. Set exactly one of value or optionValue according to the metric type and set the other field to null.",
       "exampleCall": "client.metrics.writePoints(123, { points: [{ date: '2024-12-31', value: 123, optionValue: null, timeframe: \"Month\" }] })",
       "responseType": "MetricsWritePointsResponse",
+      "pathParams": [
+        {
+          "name": "metricId",
+          "type": "number",
+          "description": null
+        }
+      ],
+      "queryParams": []
+    },
+    "deletePoints": {
+      "method": "DELETE",
+      "path": "/metrics/:metricId/points",
+      "summary": "Delete selected metric points",
+      "description": "Deletes stored points identified by exact date and timeframe for one metric instance. Missing points are a no-op. Requires metric-value edit access; non-managed companies must explicitly grant investor metric editing. Does not delete the metric row, metric type, template entry, or underlying points of calculated aggregates. Calculated values may still appear on reads when other stored points can be aggregated. Returns remaining stored points within the requested date bounds.",
+      "exampleCall": "client.metrics.deletePoints(123, { points: [{ date: '2024-12-31', timeframe: \"Month\" }] })",
+      "responseType": "MetricsDeletePointsResponse",
       "pathParams": [
         {
           "name": "metricId",
@@ -574,7 +606,7 @@ const routeManifest = {
       "method": "POST",
       "path": "/metrics",
       "summary": "Read metric values for accessible companies, grouped by company",
-      "description": "Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Each entry embeds a metric type *summary* (id, name, shortName, valueType, unit, plus option/range config when relevant); the full definition lives on /metrics/types. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames` — case-insensitive exact match on either the full name or the `shortName`, so \"MRR\" and \"MRR - Monthly Recurring Revenue\" both work), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Use `pointLimit` to keep only the most recent N points per metric (`pointLimit: 1` = latest dated point; set `to` to today to exclude future values) — without it every historical point is returned, which can be very large across a portfolio. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.",
+      "description": "Row existence does not imply a current investor request: removing template targeting preserves reported data. Use metricTemplates.get and its company/group targeting to inspect request state; entries outside full targeting visibility are omitted, so absence from a restricted template response is not proof of no request. Returns metric data points for companies the caller can access (companies in the caller's VC group portfolio, or the caller's own company for company users). Each entry carries company and metric type references with id and human-readable name. Each point carries both `value` (number, for `valueType === \"numeric\"`, including ranged numerics constrained by the type's `rangeConfig`) and `optionValue` (string, for `valueType === \"option\"`, matching one of `metricType.optionConfig.options[].value` — this is how boolean/yes-no metrics report their reading); read whichever matches the metric type's `valueType`. Each entry embeds a metric type *summary* (id, name, shortName, valueType, unit, plus option/range config when relevant); the full definition lives on /metrics/types. Filter by company id, company name substring (`companyNameSearch`), company group, metric type id, metric type name (`metricTypeNames` — case-insensitive exact match on either the full name or the `shortName`, so \"MRR\" and \"MRR - Monthly Recurring Revenue\" both work), timeframe, and date range to narrow the response. Pass `currency` (ISO 4217) to FX-convert monetary metrics to that target currency in one call instead of fetching company currencies separately. Use `pointLimit` to keep only the most recent N points per metric (`pointLimit: 1` = latest dated point; set `to` to today to exclude future values) — without it every historical point is returned, which can be very large across a portfolio. Entries are ordered by company id ascending — one entry per company, so `limit` pages whole companies, never partial metric lists.",
       "exampleCall": "client.metrics.search({})",
       "responseType": "MetricsSearchResponse",
       "pathParams": [],
@@ -598,6 +630,134 @@ const routeManifest = {
       "exampleCall": "client.metrics.aggregate({ aggregation: \"SUM\" })",
       "responseType": "MetricsAggregateResponse",
       "pathParams": [],
+      "queryParams": []
+    },
+    "import": {
+      "method": "POST",
+      "path": "/metrics/import",
+      "summary": "Import metrics across many companies in one call",
+      "description": "Preferred multi-company write operation. Every item supplies exactly one of metricTypeId, metricTypeName or createType; never combine selectors. provisionMissing defaults to true; set false for existing-row-only writes. For migration from writePointsBatch use onConflict=overwrite and provisionMissing=false, then handle per-item statuses. Requires metric-value edit access for every company; non-managed companies must explicitly grant investor metric editing. This grant only permits point values, not provisioning metric rows or changing templates. Writes immediately; there is no preview mode. Import a fund in one request: companies contains up to 100 companies, each with its native currency and up to 50 metric items; maximum 1000 items and 10000 points overall. Resolve types by id or exact name, optionally create custom definitions, request missing rows through the VC template, and write actual/forecast/budget points. No instance-id discovery needed. Rejects conflicting stored values unless overwrite is explicit. Access and currency are validated for all companies before writes. Results follow input order and return counts and ids, never point echoes. Each item is atomic; failed items roll back their database changes. The batch can partially succeed: check success and item statuses. Existing targeting is preserved. Dynamic scopes: metric-types:write for type creation, metric-templates:write for template changes. Replays reuse compatible types and skip identical points. Template changes can notify companies after commit; forecast/budget flags affect existing targets and require full targeting access. Dates are period starts. No formulas or forecast intervals.",
+      "exampleCall": "client.metrics.import({ companies: [{ companyId: 123, currency: 'USD', items: [{ points: [{ date: '2024-12-31', value: 123, optionValue: null, timeframe: \"Month\" }] }] }] })",
+      "responseType": "MetricsImportResponse",
+      "pathParams": [],
+      "queryParams": []
+    },
+    "getTypeUsage": {
+      "method": "GET",
+      "path": "/metrics/types/:metricTypeId/usage",
+      "summary": "Get custom metric type usage",
+      "description": "Returns template usage and accessible companies with rows referencing this VC-owned custom type. Inaccessible company details are never returned. Deletion checks all references, including those outside the caller visibility.",
+      "exampleCall": "client.metrics.getTypeUsage(123)",
+      "responseType": "MetricsGetTypeUsageResponse",
+      "pathParams": [
+        {
+          "name": "metricTypeId",
+          "type": "number",
+          "description": null
+        }
+      ],
+      "queryParams": []
+    },
+    "deleteType": {
+      "method": "DELETE",
+      "path": "/metrics/types/:metricTypeId",
+      "summary": "Delete an unused custom metric type",
+      "description": "Deletes a VC-owned custom definition only when no company row or template entry references it. Returns 409 when in use. Does not cascade-delete company data or templates. Predefined types cannot be deleted.",
+      "exampleCall": "client.metrics.deleteType(123)",
+      "responseType": "MetricsDeleteTypeResponse",
+      "pathParams": [
+        {
+          "name": "metricTypeId",
+          "type": "number",
+          "description": null
+        }
+      ],
+      "queryParams": []
+    },
+    "delete": {
+      "method": "DELETE",
+      "path": "/metrics/:metricId",
+      "summary": "Delete a company metric row and its data",
+      "description": "Destructively deletes the company row and all child forecast/budget rows and points. Requires company metric DELETE permission and rejects rows or children still requested by any investor with 409. Remove template requests first. Does not delete the metric type or edit a template. Missing rows return 404.",
+      "exampleCall": "client.metrics.delete(123)",
+      "responseType": "MetricsDeleteResponse",
+      "pathParams": [
+        {
+          "name": "metricId",
+          "type": "number",
+          "description": null
+        }
+      ],
+      "queryParams": []
+    }
+  },
+  "metricTemplates": {
+    "get": {
+      "method": "GET",
+      "path": "/metrics/templates",
+      "summary": "Get the VC metric template",
+      "description": "Use template targeting to determine which metrics are currently requested from a company. A company row may remain after a request is removed; row existence alone is not request state. Returns the caller VC template and entries whose complete targeting is accessible. Entries define requested metric types, company/group filters and forecast/budget rows. An entry hidden due to wider targeting cannot be replaced by creating another entry for the same type.",
+      "exampleCall": "client.metricTemplates.get()",
+      "responseType": "MetricTemplatesGetResponse",
+      "pathParams": [],
+      "queryParams": []
+    },
+    "createEntry": {
+      "method": "POST",
+      "path": "/metrics/templates/:templateId/entries",
+      "summary": "Request a metric through the VC template",
+      "description": "Creates company metric rows or links existing rows for matching companies, and synchronizes forecast/budget requests. May notify companies. Selectors are OR-combined. Duplicate type entries return 409, never replace existing targeting. all targets the entire VC portfolio and requires a VC admin. Does not write point values.",
+      "exampleCall": "client.metricTemplates.createEntry('123', { metricTypeId: 123, hasForecast: true, hasBudget: true, companyFilter: [{ type: \"all\" }] })",
+      "responseType": "MetricTemplatesCreateEntryResponse",
+      "pathParams": [
+        {
+          "name": "templateId",
+          "type": "string",
+          "description": null
+        }
+      ],
+      "queryParams": []
+    },
+    "updateEntry": {
+      "method": "PUT",
+      "path": "/metrics/templates/:templateId/entries/:entryId",
+      "summary": "Update a metric template entry",
+      "description": "Replaces targeting and requested forecast/budget flags. Requires access to both old and new targets. Keep metricTypeId unchanged. Removing companies stops requesting the metric; stored data is preserved. Does not change metric points or the custom type definition.",
+      "exampleCall": "client.metricTemplates.updateEntry('123', '123', { metricTypeId: 123, hasForecast: true, hasBudget: true, companyFilter: [{ type: \"all\" }] })",
+      "responseType": "MetricTemplatesUpdateEntryResponse",
+      "pathParams": [
+        {
+          "name": "templateId",
+          "type": "string",
+          "description": null
+        },
+        {
+          "name": "entryId",
+          "type": "string",
+          "description": null
+        }
+      ],
+      "queryParams": []
+    },
+    "deleteEntry": {
+      "method": "DELETE",
+      "path": "/metrics/templates/:templateId/entries/:entryId",
+      "summary": "Stop requesting a metric through the template",
+      "description": "Removes the template entry and unlinks this VC from matching company metrics and their forecast/budget rows. Preserves stored actual, forecast and budget data and other investors requests. Empty, unrequested rows may be removed. Does not delete the metric type. Use metrics.delete only for explicit data deletion.",
+      "exampleCall": "client.metricTemplates.deleteEntry('123', '123')",
+      "responseType": "MetricTemplatesDeleteEntryResponse",
+      "pathParams": [
+        {
+          "name": "templateId",
+          "type": "string",
+          "description": null
+        },
+        {
+          "name": "entryId",
+          "type": "string",
+          "description": null
+        }
+      ],
       "queryParams": []
     }
   },
@@ -842,11 +1002,26 @@ function createTransactionsNamespace(request) {
 function createMetricsNamespace(request) {
   return {
     getTypes: (query = {}, init = {}) => request({ method: "GET", path: "/metrics/types", pathParams: undefined, query: query, body: undefined, signal: init.signal }),
+    createType: (body, init = {}) => request({ method: "POST", path: "/metrics/types", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
     writePointsBatch: (body, init = {}) => request({ method: "PUT", path: "/metrics/points", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
     writePoints: (metricId, body, init = {}) => request({ method: "PUT", path: "/metrics/:metricId/points", pathParams: { metricId }, query: undefined, body: body, signal: init.signal }),
+    deletePoints: (metricId, body, init = {}) => request({ method: "DELETE", path: "/metrics/:metricId/points", pathParams: { metricId }, query: undefined, body: body, signal: init.signal }),
     search: (body, init = {}) => request({ method: "POST", path: "/metrics", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
     compare: (body, init = {}) => request({ method: "POST", path: "/metrics/compare", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
     aggregate: (body, init = {}) => request({ method: "POST", path: "/metrics/aggregate", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
+    import: (body, init = {}) => request({ method: "POST", path: "/metrics/import", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
+    getTypeUsage: (metricTypeId, init = {}) => request({ method: "GET", path: "/metrics/types/:metricTypeId/usage", pathParams: { metricTypeId }, query: undefined, body: undefined, signal: init.signal }),
+    deleteType: (metricTypeId, init = {}) => request({ method: "DELETE", path: "/metrics/types/:metricTypeId", pathParams: { metricTypeId }, query: undefined, body: undefined, signal: init.signal }),
+    delete: (metricId, init = {}) => request({ method: "DELETE", path: "/metrics/:metricId", pathParams: { metricId }, query: undefined, body: undefined, signal: init.signal }),
+  }
+}
+
+function createMetricTemplatesNamespace(request) {
+  return {
+    get: (init = {}) => request({ method: "GET", path: "/metrics/templates", pathParams: undefined, query: undefined, body: undefined, signal: init.signal }),
+    createEntry: (templateId, body, init = {}) => request({ method: "POST", path: "/metrics/templates/:templateId/entries", pathParams: { templateId }, query: undefined, body: body, signal: init.signal }),
+    updateEntry: (templateId, entryId, body, init = {}) => request({ method: "PUT", path: "/metrics/templates/:templateId/entries/:entryId", pathParams: { templateId, entryId }, query: undefined, body: body, signal: init.signal }),
+    deleteEntry: (templateId, entryId, init = {}) => request({ method: "DELETE", path: "/metrics/templates/:templateId/entries/:entryId", pathParams: { templateId, entryId }, query: undefined, body: undefined, signal: init.signal }),
   }
 }
 
@@ -874,6 +1049,7 @@ export function createClient(options) {
     positions: createPositionsNamespace(request),
     transactions: createTransactionsNamespace(request),
     metrics: createMetricsNamespace(request),
+    metricTemplates: createMetricTemplatesNamespace(request),
     companyReports: createCompanyReportsNamespace(request),
   }
 }
