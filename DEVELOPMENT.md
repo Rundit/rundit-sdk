@@ -17,7 +17,7 @@ rundit-back (private)                          rundit-sdk (public, this repo)
         (GitHub App token; target branch                → generate packages/{embed,client}
          mirrors the source branch)                      → check-compatibility (breaking gate)
                                                          → npm publish --provenance (OIDC)
-                                                         → commit regenerated code + versions.json
+                                                         → commit versions.json (stable releases)
 ```
 
 Consumers are unaffected by the move: the package names stay `@rundit-sdk/client`
@@ -42,8 +42,8 @@ gitignoring the generated artifacts there — that is not a driver for this spli
 spec/
   sdk.openapi.json          # the contract — committed here by rundit-back's bot
 packages/
-  client/                   # generated AND committed (public source of truth)
-  embed/                    # generated AND committed
+  client/                   # generated, ignored by Git, published to npm
+  embed/                    # generated, ignored by Git, published to npm
 scripts/
   contract.cjs              # package config (names, dirs, audiences, auth) — moved from rundit-back
   generate-sdk.cjs          # spec → packages/{embed,client}            — moved
@@ -59,12 +59,60 @@ versions.json               # last published stable per package
 `versions.json` is the durable version source. There is **no** `release-type.json`
 marker here — the bump type is computed (decision 3).
 
+After a fresh checkout, run `npm ci` and `npm run sdk:generate` before using or
+checking the SDK packages. Package `files` lists control npm tarball contents;
+generated output does not need to be tracked by Git to be packaged or published.
+
 ## Channel mapping (decision 2)
 
 | rundit-back branch | spec lands on rundit-sdk branch | dist-tag published |
 | ------------------ | ------------------------------- | ------------------ |
 | `develop`          | `develop`                       | `rc`               |
 | `production`       | `production`                    | `latest`           |
+
+## Hosted MCP rebuilds
+
+After a successful SDK publish, `publish.yml` runs `scripts/redeploy-mcp.cjs`:
+
+1. Wait for `@rundit-sdk/client` at the channel dist-tag to resolve to the exact
+   version just published, and for its tarball to be downloadable (up to 20
+   attempts, 10 seconds apart; individual registry requests time out after 5 seconds).
+2. POST to the matching Cloud 66 hook with `services=mcp`. The hosted Dockerfile
+   installs `@rc` on test or `@latest` on production and regenerates the tools.
+3. Fail the workflow step if registry propagation or the hook request fails. A
+   successful hook means the deployment was requested; Cloud 66 reports build and
+   rollout results separately.
+
+### One-time Cloud 66 / GitHub setup
+
+In each Cloud 66 stack, create a deployment profile for the **mcp** service with
+both **Build** and **Publish** enabled. Use **Parallel Deployment** so rebuilding
+does not depend on a new MCP Git commit.
+
+Add these Actions secrets to **Rundit/rundit-sdk**, using the complete redeployment
+hook URL with `?deployment_profile=<profile-name>` (URL-encode the profile name):
+
+| Secret | Target |
+| ------ | ------ |
+| `CLOUD66_MCP_REDEPLOY_HOOK_TEST` | Test stack, SDK `rc` |
+| `CLOUD66_MCP_REDEPLOY_HOOK_PROD` | Production stack, SDK `latest` |
+
+The helper preserves the profile and restricts service selection to `mcp`.
+See [Cloud 66 redeployment hooks](https://help.cloud66.com/deploy/deployment/redeployment-hook/).
+
+### Retry deployment without republishing
+
+Dispatch **Publish SDK Packages** on `develop` (test) or `production` (production)
+with `redeploy_mcp_only=true`. This skips SDK generation and publishing and rebuilds
+MCP using the existing npm channel release, even when there is no SDK drift:
+
+```sh
+gh workflow run publish.yml --repo Rundit/rundit-sdk --ref develop -f redeploy_mcp_only=true
+```
+
+Check the automation locally with `node --test scripts/redeploy-mcp.test.cjs`.
+
+## SDK branch publishing
 
 `production` is the default/stable branch here, matching the other Rundit repos. The
 publish workflow triggers on pushes to those branches that touch `spec/sdk.openapi.json`.
@@ -145,7 +193,7 @@ These cannot be scripted — do them once.
    ```yaml
    permissions:
      id-token: write   # OIDC for provenance
-     contents: write   # commit regenerated code back
+     contents: write   # commit stable versions.json updates
    ```
    and publishes with `npm publish --provenance --access public`.
 4. With trusted publishing, **no `NPM_TOKEN` is needed** — OIDC replaces it (a security
@@ -161,7 +209,7 @@ These cannot be scripted — do them once.
 
 **Phase 1 — stand up rundit-sdk.** Move the scripts above; add `classify-bump.cjs` and
 `publish.yml`; configure trusted publishing (B) and branches (C); seed `spec/` with the
-current spec and commit the current generated `packages/`. Prove it can publish
+current spec and generate `packages/` during the build. Prove it can publish
 `0.3.0-rc` **with provenance** from `develop`.
 
 **Phase 2 — rundit-back emits + ships.** Add a job that runs `write-openapi.ts` and
@@ -201,7 +249,7 @@ The first stable release is the v1 → v2 cut. `latest` is still `0.2.0` (the ol
    `spec/sdk.openapi.json` to `rundit-sdk:production`, which triggers `publish.yml`:
    detect-drift vs `latest` (v1) → differs → publish; breaking gate → pre-1.0 →
    tolerated (warns); classify-bump → `major` capped to `minor` → **`0.3.0`** published
-   to `latest` with provenance; generated source committed back to `production`.
+   to `latest` with provenance; `versions.json` committed back to `production`.
 
 After this, `latest` is v2 and subsequent rundit-back → production merges are
 non-breaking and publish automatically.
