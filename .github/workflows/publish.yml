@@ -18,16 +18,21 @@ on:
         description: Publish even if the generated surface already matches the channel's dist-tag
         type: boolean
         default: false
+      redeploy_mcp_only:
+        description: Rebuild MCP from the existing channel release without publishing SDK packages
+        type: boolean
+        default: false
 
 concurrency:
   group: sdk-publish-${{ github.ref }}
-  cancel-in-progress: true
+  # Finish publishing and handing off to MCP before starting the next release.
+  cancel-in-progress: false
 
 jobs:
   publish-sdk:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # commit regenerated packages + versions.json on release
+      contents: write # commit versions.json on release
       id-token: write # npm provenance via OIDC trusted publishing
     steps:
       - uses: actions/checkout@v6
@@ -45,6 +50,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Check MCP rebuild automation
+        run: node --test scripts/redeploy-mcp.test.cjs
+
       - name: Resolve channel
         id: channel
         shell: bash
@@ -58,12 +66,19 @@ jobs:
           fi
 
       - name: Generate SDK from committed spec
+        if: inputs.redeploy_mcp_only != true
         run: npm run sdk:generate
 
       - name: Decide whether to publish
         id: drift
         shell: bash
         run: |
+          if [[ "$REDEPLOY_MCP_ONLY" == 'true' ]]; then
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+            echo 'Rebuilding MCP from the existing npm release; SDK publishing skipped.'
+            exit 0
+          fi
+
           # Publish only when the generated surface differs from what's already on the
           # channel's dist-tag (or when forced). detect-drift prints true/false.
           if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.force_publish }}" == 'true' ]]; then
@@ -79,6 +94,8 @@ jobs:
             echo 'publish=false' >> "$GITHUB_OUTPUT"
             echo "Surface matches @${{ steps.channel.outputs.dist_tag }}; nothing to publish."
           fi
+        env:
+          REDEPLOY_MCP_ONLY: ${{ inputs.redeploy_mcp_only }}
 
       - name: Check SDK surface for internal leaks
         if: steps.drift.outputs.publish == 'true'
@@ -125,22 +142,39 @@ jobs:
       - name: Publish release (production)
         if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
         # Bump versions.json by the classified type, bake it into the packages, publish
-        # to the latest tag, then commit the authoritative generated source below.
+        # to the latest tag, then commit versions.json below.
         run: |
           npm run sdk:version:bump -- ${{ steps.bump.outputs.type }}
           npm run sdk:generate
           npm run sdk:publish
 
-      - name: Commit released SDK source
+      - name: Commit released SDK versions
         if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
         shell: bash
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add packages versions.json
+          git add versions.json
           if git diff --cached --quiet; then
-            echo 'No source changes to commit.'
+            echo 'No version changes to commit.'
             exit 0
           fi
           git commit -m "chore: publish SDK packages [skip ci]"
           git push
+
+      - name: Rebuild hosted MCP from published SDK
+        if: steps.drift.outputs.publish == 'true' || inputs.redeploy_mcp_only == true
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          if [[ "$SDK_PUBLISHED" == 'true' ]]; then
+            VERSION="$(node -p 'require("./packages/client/package.json").version')"
+            node scripts/redeploy-mcp.cjs "$SDK_DIST_TAG" "$VERSION"
+          else
+            node scripts/redeploy-mcp.cjs "$SDK_DIST_TAG"
+          fi
+        env:
+          SDK_DIST_TAG: ${{ steps.channel.outputs.dist_tag }}
+          SDK_PUBLISHED: ${{ steps.drift.outputs.publish }}
+          CLOUD66_MCP_REDEPLOY_HOOK_TEST: ${{ secrets.CLOUD66_MCP_REDEPLOY_HOOK_TEST }}
+          CLOUD66_MCP_REDEPLOY_HOOK_PROD: ${{ secrets.CLOUD66_MCP_REDEPLOY_HOOK_PROD }}

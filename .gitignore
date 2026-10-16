@@ -143,8 +143,5 @@ vite.config.ts.timestamp-*
 .vite/
 
 # --- rundit-sdk -------------------------------------------------------------
-# The generated SDK packages (including their dist/) ARE committed here as the
-# public source of truth for each release. Re-include them: the generic `dist`
-# rule above would otherwise drop packages/*/dist/.
-!packages/
-!packages/**
+# Generated from spec/sdk.openapi.json; published to npm rather than committed.
+/packages/

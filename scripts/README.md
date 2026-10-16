@@ -7,7 +7,8 @@ The spec is **not** authored here — `rundit-back` emits `spec/sdk.openapi.json
 `write-openapi.ts`, which introspects the live NestJS controllers) and commits it into
 this repo. That spec is the contract. The generated packages live under
 `packages/<packageDir>/` and are **fully regenerated** on every build — never hand-edit
-anything in there. They are committed (on stable releases) as the public source of truth.
+anything in there. They are ignored by Git and published to npm; the spec,
+generator and `versions.json` are the tracked inputs.
 
 ## The pipeline
 
@@ -46,7 +47,7 @@ is in [.github/workflows/publish.yml](../.github/workflows/publish.yml).
 | Branch (here) | dist-tag | Notes |
 | ------------- | -------- | ----- |
 | `develop`     | `rc`     | preview of the next stable; not committed back |
-| `production`  | `latest` | stable release; generated source committed back |
+| `production`  | `latest` | stable release; only versions.json committed back |
 
 - `versions.json` stores only **stable** release versions (bumped on `production`).
 - The bump type is **auto-derived** by `classify-bump.cjs` (no manual marker): it diffs
