@@ -127,6 +127,7 @@ jobs:
         run: echo "type=patch" >> "$GITHUB_OUTPUT"
 
       - name: Publish rc (develop)
+        id: publish_rc
         if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'rc'
         # rc artifacts are previews; not committed back. The version is
         # bump(lastStable, type)-rc.<run_number>.
@@ -140,6 +141,7 @@ jobs:
           SDK_NPM_DIST_TAG: rc
 
       - name: Publish release (production)
+        id: publish_release
         if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
         # Bump versions.json by the classified type, bake it into the packages, publish
         # to the latest tag, then commit versions.json below.
@@ -154,16 +156,15 @@ jobs:
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add versions.json
-          if git diff --cached --quiet; then
-            echo 'No version changes to commit.'
-            exit 0
-          fi
-          git commit -m "chore: publish SDK packages [skip ci]"
-          git push
+          node scripts/persist-versions.cjs "$GITHUB_REF_NAME"
 
       - name: Rebuild hosted MCP from published SDK
-        if: steps.drift.outputs.publish == 'true' || inputs.redeploy_mcp_only == true
+        # A metadata commit failure must not suppress deployment of an already
+        # published SDK. Keep failed publishes and cancelled runs out of this path.
+        if: >-
+          ${{ !cancelled() &&
+              (steps.publish_rc.outcome == 'success' || steps.publish_release.outcome == 'success' ||
+               (inputs.redeploy_mcp_only == true && steps.drift.outcome == 'success')) }}
         timeout-minutes: 10
         shell: bash
         run: |
@@ -175,6 +176,6 @@ jobs:
           fi
         env:
           SDK_DIST_TAG: ${{ steps.channel.outputs.dist_tag }}
-          SDK_PUBLISHED: ${{ steps.drift.outputs.publish }}
+          SDK_PUBLISHED: ${{ steps.publish_rc.outcome == 'success' || steps.publish_release.outcome == 'success' }}
           CLOUD66_MCP_REDEPLOY_HOOK_TEST: ${{ secrets.CLOUD66_MCP_REDEPLOY_HOOK_TEST }}
           CLOUD66_MCP_REDEPLOY_HOOK_PROD: ${{ secrets.CLOUD66_MCP_REDEPLOY_HOOK_PROD }}

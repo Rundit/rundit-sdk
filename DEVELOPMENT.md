@@ -83,6 +83,10 @@ After a successful SDK publish, `publish.yml` runs `scripts/redeploy-mcp.cjs`:
    successful hook means the deployment was requested; Cloud 66 reports build and
    rollout results separately.
 
+The rebuild handoff depends on successful npm publication, not on successful
+version commit-back. If persisting `versions.json` fails, the workflow stays red
+but still requests the MCP rebuild; failed publishes and cancelled runs do not.
+
 ### One-time Cloud 66 / GitHub setup
 
 In each Cloud 66 stack, create a deployment profile for the **mcp** service with
@@ -147,6 +151,12 @@ on `latest` yet).
 For `rc`: the prerelease version is `bump(lastStable, type)-rc.<run_number>` (same scheme
 as before, but `type` is now computed). For `latest`: `versions.json` is bumped by `type`
 and committed back.
+
+Stable bumps start from the newer of `versions.json` and npm's `latest` version;
+registry errors fail the release rather than falling back to a stale baseline.
+Commit-back uses a disposable worktree at the current remote branch head and
+retries intervening pushes up to three times. Only version increases are committed,
+preserving newer specs and any higher version already recorded on the branch.
 
 ## Manual setup checklist (decision 5)
 
