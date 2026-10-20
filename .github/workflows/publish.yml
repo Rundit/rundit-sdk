@@ -18,27 +18,21 @@ on:
         description: Publish even if the generated surface already matches the channel's dist-tag
         type: boolean
         default: false
-      redeploy_mcp_only:
-        description: Rebuild MCP from the existing channel release without publishing SDK packages
-        type: boolean
-        default: false
 
 concurrency:
   group: sdk-publish-${{ github.ref }}
-  # Finish publishing and handing off to MCP before starting the next release.
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   publish-sdk:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write # commit regenerated packages + versions.json on release
       id-token: write # npm provenance via OIDC trusted publishing
     steps:
       - uses: actions/checkout@v6
         with:
-          # Resolve the current branch after acquiring the release slot.
-          ref: ${{ github.ref }}
+          fetch-depth: 0
 
       - uses: actions/setup-node@v6
         with:
@@ -51,33 +45,25 @@ jobs:
 
       - run: npm ci
 
-      - name: Check MCP rebuild automation
-        run: node --test scripts/redeploy-mcp.test.cjs
-
       - name: Resolve channel
         id: channel
         shell: bash
         run: |
           if [[ "${{ github.ref_name }}" == 'production' ]]; then
+            echo 'channel=release' >> "$GITHUB_OUTPUT"
             echo 'dist_tag=latest' >> "$GITHUB_OUTPUT"
           else
+            echo 'channel=rc' >> "$GITHUB_OUTPUT"
             echo 'dist_tag=rc' >> "$GITHUB_OUTPUT"
           fi
 
       - name: Generate SDK from committed spec
-        if: inputs.redeploy_mcp_only != true
         run: npm run sdk:generate
 
       - name: Decide whether to publish
         id: drift
         shell: bash
         run: |
-          if [[ "$REDEPLOY_MCP_ONLY" == 'true' ]]; then
-            echo 'publish=false' >> "$GITHUB_OUTPUT"
-            echo 'Rebuilding MCP from the existing npm release; SDK publishing skipped.'
-            exit 0
-          fi
-
           # Publish only when the generated surface differs from what's already on the
           # channel's dist-tag (or when forced). detect-drift prints true/false.
           if [[ "${{ github.event_name }}" == 'workflow_dispatch' && "${{ inputs.force_publish }}" == 'true' ]]; then
@@ -93,8 +79,6 @@ jobs:
             echo 'publish=false' >> "$GITHUB_OUTPUT"
             echo "Surface matches @${{ steps.channel.outputs.dist_tag }}; nothing to publish."
           fi
-        env:
-          REDEPLOY_MCP_ONLY: ${{ inputs.redeploy_mcp_only }}
 
       - name: Check SDK surface for internal leaks
         if: steps.drift.outputs.publish == 'true'
@@ -125,31 +109,51 @@ jobs:
         # latest is on v2.
         run: echo "type=patch" >> "$GITHUB_OUTPUT"
 
-      - name: Publish SDK packages
-        id: publish
-        if: steps.drift.outputs.publish == 'true'
+      - name: Publish rc (develop)
+        id: publish_rc
+        if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'rc'
+        # rc artifacts are previews; not committed back. The version is
+        # bump(lastStable, type)-rc.<run_number>.
+        run: |
+          npm run sdk:generate
+          npm run sdk:publish
+        env:
+          SDK_PRERELEASE_CHANNEL: rc
+          SDK_PRERELEASE_BUMP: ${{ steps.bump.outputs.type }}
+          SDK_PRERELEASE_ITERATION: ${{ github.run_number }}
+          SDK_NPM_DIST_TAG: rc
+
+      - name: Publish release (production)
+        id: publish_release
+        if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
+        # Bump versions.json by the classified type, bake it into the packages, publish
+        # to the latest tag, then commit the authoritative generated source below.
         run: |
           npm run sdk:version:bump -- ${{ steps.bump.outputs.type }}
           npm run sdk:generate
           npm run sdk:publish
-        env:
-          SDK_NPM_DIST_TAG: ${{ steps.channel.outputs.dist_tag }}
-          # A rerun supersedes a partial rc publish with a fresh version.
-          SDK_PRERELEASE_ITERATION: ${{ github.run_number }}.${{ github.run_attempt }}
 
-      - name: Rebuild hosted MCP from published SDK
-        if: steps.publish.outcome == 'success' || inputs.redeploy_mcp_only == true
-        timeout-minutes: 10
+      - name: Commit released SDK source
+        if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
         shell: bash
         run: |
-          if [[ "$SDK_PUBLISHED" == 'true' ]]; then
-            VERSION="$(node -p 'require("./packages/client/package.json").version')"
-            node scripts/redeploy-mcp.cjs "$SDK_DIST_TAG" "$VERSION"
-          else
-            node scripts/redeploy-mcp.cjs "$SDK_DIST_TAG"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add packages versions.json
+          if git diff --cached --quiet; then
+            echo 'No source changes to commit.'
+            exit 0
           fi
+          git commit -m "chore: publish SDK packages [skip ci]"
+          git push
+
+      - name: Rebuild hosted MCP
+        # A failed source commit must not skip the hook after successful publication.
+        if: ${{ !cancelled() && (steps.publish_rc.outcome == 'success' || steps.publish_release.outcome == 'success') }}
         env:
-          SDK_DIST_TAG: ${{ steps.channel.outputs.dist_tag }}
-          SDK_PUBLISHED: ${{ steps.publish.outcome == 'success' }}
-          CLOUD66_MCP_REDEPLOY_HOOK_TEST: ${{ secrets.CLOUD66_MCP_REDEPLOY_HOOK_TEST }}
-          CLOUD66_MCP_REDEPLOY_HOOK_PROD: ${{ secrets.CLOUD66_MCP_REDEPLOY_HOOK_PROD }}
+          MCP_REDEPLOY_HOOK: ${{ secrets[steps.channel.outputs.channel == 'release' && 'CLOUD66_MCP_REDEPLOY_HOOK_PROD' || 'CLOUD66_MCP_REDEPLOY_HOOK_TEST'] }}
+        run: |
+          if ! curl --silent --fail --output /dev/null --max-time 30 --request POST "$MCP_REDEPLOY_HOOK"; then
+            echo '::error::MCP rebuild webhook failed.'
+            exit 1
+          fi

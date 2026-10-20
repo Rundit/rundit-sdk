@@ -7,8 +7,7 @@ The spec is **not** authored here — `rundit-back` emits `spec/sdk.openapi.json
 `write-openapi.ts`, which introspects the live NestJS controllers) and commits it into
 this repo. That spec is the contract. The generated packages live under
 `packages/<packageDir>/` and are **fully regenerated** on every build — never hand-edit
-anything in there. They are ignored by Git and published to npm; the spec,
-generator and `versions.json` are the tracked inputs.
+anything in there. They are committed (on stable releases) as the public source of truth.
 
 ## The pipeline
 
@@ -30,7 +29,7 @@ rundit-back  ──commits──▶  spec/sdk.openapi.json
                      classify-bump.cjs       ◀── derive major/minor/patch (vs latest)
                                    │
                                    ▼
-                     bump-version.cjs → local versions.json
+                     bump-version.cjs (release only) → versions.json
                                    │
                                    ▼
                            generate-sdk.cjs ◀── re-bake version
@@ -47,16 +46,13 @@ is in [.github/workflows/publish.yml](../.github/workflows/publish.yml).
 | Branch (here) | dist-tag | Notes |
 | ------------- | -------- | ----- |
 | `develop`     | `rc`     | preview of the next stable; not committed back |
-| `production`  | `latest` | stable release; no Git write-back |
+| `production`  | `latest` | stable release; generated source committed back |
 
-- Tracked `versions.json` sets minimum stable baselines; npm records released versions.
+- `versions.json` stores only **stable** release versions (bumped on `production`).
 - The bump type is **auto-derived** by `classify-bump.cjs` (no manual marker): it diffs
   the generated surface against `latest` in both directions — breaking ⇒ `major`,
   additive ⇒ `minor`, non-structural ⇒ `patch`, identical ⇒ `none`.
-- Both packages use one version above the highest npm `latest` version or configured
-  minimum. rc versions append `-rc.<run_number>.<run_attempt>`.
-- Version selection updates only the local `versions.json` before generation. Partial
-  publishes are superseded by a fresh release; no version commits or push retries.
+- rc versions are `bump(lastStable, type)-rc.<run_number>`; stable bumps `versions.json`.
 
 ## Files in this directory
 
@@ -69,7 +65,7 @@ is in [.github/workflows/publish.yml](../.github/workflows/publish.yml).
 | [../wire-test.mjs](../wire-test.mjs) | Manifest-driven runtime contract test (Node's built-in test runner, zero deps). Walks each client's `routeManifest`, invokes every method with a mocked `fetch`, and asserts HTTP method, URL, path interpolation, required query params, auth header, and body+`Content-Type`. Run via `npm run sdk:check-wire-contract`. |
 | [check-compatibility.cjs](check-compatibility.cjs) | Diffs the generated `openapi.json` against the spec bundled in the version at `SDK_DIST_TAG` (default `latest`) and fails on breaking changes. Override with `SDK_ALLOW_BREAKING=true` for intentional majors. Exports `findBreakingChanges`/`loadPublishedSpec` for `classify-bump.cjs`. |
 | [classify-bump.cjs](classify-bump.cjs) | Derives the semver bump (`major`/`minor`/`patch`/`none`) from the spec diff vs a dist-tag. Replaces the old manual release-type marker. |
-| [bump-version.cjs](bump-version.cjs) | Selects a shared stable or rc version from npm and configured minimums, and writes it to the local `versions.json` for generation. |
+| [bump-version.cjs](bump-version.cjs) | Bumps `versions.json` (patch/minor/major). Versions live there — not in each `package.json` — because `generate-sdk.cjs` rewrites `package.json` from scratch each run. |
 | [publish-packages.cjs](publish-packages.cjs) | Publishes each package to npm, skipping any `name@version` already on the registry (safe to re-run after a partial failure). Adds `--provenance` automatically in GitHub Actions and supports dist-tags via `SDK_NPM_DIST_TAG`. |
 
 ## Adding a new SDK audience
