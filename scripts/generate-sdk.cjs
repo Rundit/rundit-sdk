@@ -17,15 +17,12 @@
  *     express directly than as a plugin to a third-party generator.
  *   - The output must remain dependency-free at runtime (uses globalThis.fetch).
  *
- * Versions are read from versions.json (managed by bump-version.cjs);
- * missing entries fall back to '0.0.0-development'. Prerelease (rc) builds instead
- * baseline off the highest of versions.json and the released dist-tag on npm — see
- * resolvePrereleaseBaseline. The generator wipes each package directory before writing —
- * never hand-edit files under packages/<packageDir>/.
+ * Versions are read from versions.json; bump-version.cjs selects release versions
+ * before generation in CI. Missing entries fall back to '0.0.0-development'.
+ * The generator wipes each package directory before writing.
  */
 const fs = require('fs')
 const path = require('path')
-const { execFileSync } = require('child_process')
 const { sdkPackages } = require('./contract.cjs')
 
 const rootDir = path.resolve(__dirname, '..')
@@ -37,7 +34,7 @@ const defaultSdkBaseUrl = 'https://api.rundit.com/api/v2/sdk'
 
 function main() {
   const spec = JSON.parse(fs.readFileSync(openApiSpecPath, 'utf8'))
-  const packageVersions = resolveSdkPackageVersions(loadSdkPackageVersions())
+  const packageVersions = loadSdkPackageVersions()
   fs.mkdirSync(packagesRootDir, { recursive: true })
 
   Object.entries(sdkPackages).forEach(([audience, packageConfig]) => {
@@ -84,125 +81,6 @@ function loadSdkPackageVersions() {
   }
 
   return JSON.parse(fs.readFileSync(versionsPath, 'utf8'))
-}
-
-function resolveSdkPackageVersions(packageVersions) {
-  return Object.fromEntries(
-    Object.keys(sdkPackages).map((packageKey) => [
-      packageKey,
-      resolvePackageVersion(packageKey, packageVersions[packageKey] || '0.0.0-development'),
-    ]),
-  )
-}
-
-function resolvePackageVersion(packageKey, version) {
-  const prereleaseChannel = process.env.SDK_PRERELEASE_CHANNEL?.trim()
-
-  if (!prereleaseChannel) {
-    return version
-  }
-
-  const prereleaseIteration = sanitizePrereleaseIdentifier(process.env.SDK_PRERELEASE_ITERATION || '0')
-  const prereleaseBump = process.env.SDK_PRERELEASE_BUMP || 'patch'
-  const stableVersion = resolvePrereleaseBaseline(packageKey, version)
-
-  return `${bumpStableVersion(stableVersion, prereleaseBump)}-${sanitizePrereleaseIdentifier(prereleaseChannel)}.${prereleaseIteration}`
-}
-
-/**
- * Picks the stable version an rc should preview.
- *
- * An rc is "the next stable", so its baseline must be the newest released version. It
- * cannot be versions.json alone: that file is only bumped by the release job on the
- * production branch and is never merged back, so on develop it stays frozen at whatever
- * it was when the line started. That is how rc got stuck re-issuing 0.3.1-rc.N after
- * 0.3.1, 0.3.2 and 0.3.3 had already shipped to `latest`.
- *
- * Taking the highest of (released dist-tag, versions.json) makes the rc line correct by
- * construction while still honouring a deliberate manual jump in versions.json — moving
- * the line forward by hand (as `chore(sdk): move rc/stable line to 0.3.x` once did) keeps
- * working, because a hand-set higher version wins.
- *
- * Falls back to versions.json when the package has never been published, and when the
- * registry cannot be reached at all — the publish step queries npm again and will fail
- * loudly there rather than here.
- */
-function resolvePrereleaseBaseline(packageKey, version) {
-  const declared = normalizeStableVersion(version)
-  const releaseTag = process.env.SDK_RELEASE_DIST_TAG?.trim() || 'latest'
-  const packageName = sdkPackages[packageKey]?.packageName
-
-  if (!packageName) {
-    return declared
-  }
-
-  const published = normalizeStableVersion(readPublishedVersion(packageName, releaseTag) || '0.0.0')
-
-  if (compareStableVersions(published, declared) > 0) {
-    console.log(
-      `${packageKey}: baselining rc on ${packageName}@${releaseTag} (${published}) — versions.json says ${declared}`,
-    )
-    return published
-  }
-
-  return declared
-}
-
-/** Released version behind a dist-tag, or null when unpublished / registry unreachable. */
-function readPublishedVersion(packageName, tag) {
-  try {
-    const output = execFileSync('npm', ['view', packageName, `dist-tags.${tag}`, '--json'], {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }).trim()
-
-    return output ? JSON.parse(output) : null
-  } catch {
-    return null
-  }
-}
-
-/** Numeric compare of two x.y.z strings. Returns >0 when `left` is newer. */
-function compareStableVersions(left, right) {
-  const leftParts = left.split('.').map((part) => Number.parseInt(part, 10) || 0)
-  const rightParts = right.split('.').map((part) => Number.parseInt(part, 10) || 0)
-
-  for (let index = 0; index < 3; index += 1) {
-    if (leftParts[index] !== rightParts[index]) {
-      return leftParts[index] - rightParts[index]
-    }
-  }
-
-  return 0
-}
-
-function normalizeStableVersion(version) {
-  return String(version).split('-')[0]
-}
-
-function bumpStableVersion(version, bump) {
-  const [major, minor, patch] = normalizeStableVersion(version)
-    .split('.')
-    .map((part) => Number.parseInt(part, 10) || 0)
-
-  switch (bump) {
-    case 'major':
-      return `${major + 1}.0.0`
-    case 'minor':
-      return `${major}.${minor + 1}.0`
-    case 'patch':
-    default:
-      return `${major}.${minor}.${patch + 1}`
-  }
-}
-
-function sanitizePrereleaseIdentifier(value) {
-  return (
-    String(value)
-      .trim()
-      .replace(/[^0-9A-Za-z-]+/g, '-')
-      .replace(/^-+|-+$/g, '') || '0'
-  )
 }
 
 function createAudienceOpenApiSpec(spec, audience) {

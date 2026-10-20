@@ -17,7 +17,7 @@ rundit-back (private)                          rundit-sdk (public, this repo)
         (GitHub App token; target branch                → generate packages/{embed,client}
          mirrors the source branch)                      → check-compatibility (breaking gate)
                                                          → npm publish --provenance (OIDC)
-                                                         → commit versions.json (stable releases)
+                                                         → request hosted MCP rebuild
 ```
 
 Consumers are unaffected by the move: the package names stay `@rundit-sdk/client`
@@ -52,11 +52,11 @@ scripts/
   detect-drift.cjs          # safety net: generated surface vs npm       — moved
   bump-version.cjs          # mutate versions.json                       — moved
   publish-packages.cjs      # npm publish --provenance                   — moved
-versions.json               # last published stable per package
+versions.json               # minimum stable baseline per package
 .github/workflows/publish.yml
 ```
 
-`versions.json` is the durable version source. There is **no** `release-type.json`
+npm records released versions; tracked `versions.json` sets minimum baselines. There is **no** `release-type.json`
 marker here — the bump type is computed (decision 3).
 
 After a fresh checkout, run `npm ci` and `npm run sdk:generate` before using or
@@ -83,9 +83,9 @@ After a successful SDK publish, `publish.yml` runs `scripts/redeploy-mcp.cjs`:
    successful hook means the deployment was requested; Cloud 66 reports build and
    rollout results separately.
 
-The rebuild handoff depends on successful npm publication, not on successful
-version commit-back. If persisting `versions.json` fails, the workflow stays red
-but still requests the MCP rebuild; failed publishes and cancelled runs do not.
+The rebuild handoff runs after both packages publish successfully. Failed publishes
+and cancelled runs do not request a rebuild. Use `redeploy_mcp_only` to retry a failed
+handoff without another SDK release.
 
 ### One-time Cloud 66 / GitHub setup
 
@@ -148,15 +148,20 @@ channel's published spec still trips the breaking gate, so the first `production
 v2 must be a dispatched run with `allow_breaking=true` (safe here: no external consumers
 on `latest` yet).
 
-For `rc`: the prerelease version is `bump(lastStable, type)-rc.<run_number>` (same scheme
-as before, but `type` is now computed). For `latest`: `versions.json` is bumped by `type`
-and committed back.
+Release runs are serialized and check out the current branch head when they start,
+so queued runs and reruns use the newest synced backend spec. A running release
+finishes before the next one starts.
 
-Stable bumps start from the newer of `versions.json` and npm's `latest` version;
-registry errors fail the release rather than falling back to a stale baseline.
-Commit-back uses a disposable worktree at the current remote branch head and
-retries intervening pushes up to three times. Only version increases are committed,
-preserving newer specs and any higher version already recorded on the branch.
+Both packages receive the same version: bump the highest of their npm `latest`
+versions and tracked `versions.json` minimums. Registry errors fail the release.
+For `rc`, append `-rc.<run_number>.<run_attempt>` so reruns have fresh versions.
+The generator simply reads the selected versions from the local `versions.json`.
+No release metadata or generated artifacts are committed back to Git.
+
+A partial publish is superseded by a fresh release on the next publish attempt;
+existing npm versions are never overwritten. Rerun the workflow or dispatch with
+`force_publish` to publish the current spec again. Use `redeploy_mcp_only` when only
+the MCP handoff needs retrying.
 
 ## Manual setup checklist (decision 5)
 
@@ -203,7 +208,7 @@ These cannot be scripted — do them once.
    ```yaml
    permissions:
      id-token: write   # OIDC for provenance
-     contents: write   # commit stable versions.json updates
+     contents: read    # check out the SDK source
    ```
    and publishes with `npm publish --provenance --access public`.
 4. With trusted publishing, **no `NPM_TOKEN` is needed** — OIDC replaces it (a security
@@ -259,17 +264,14 @@ The first stable release is the v1 → v2 cut. `latest` is still `0.2.0` (the ol
    `spec/sdk.openapi.json` to `rundit-sdk:production`, which triggers `publish.yml`:
    detect-drift vs `latest` (v1) → differs → publish; breaking gate → pre-1.0 →
    tolerated (warns); classify-bump → `major` capped to `minor` → **`0.3.0`** published
-   to `latest` with provenance; `versions.json` committed back to `production`.
+   to `latest` with provenance; request the production MCP rebuild.
 
 After this, `latest` is v2 and subsequent rundit-back → production merges are
 non-breaking and publish automatically.
 
 ### Branch-push requirement (applies to `production`)
 
-Two pushes target `rundit-sdk:production`: the spec ship (rundit-back's App token) and
-`publish.yml`'s release commit-back (`GITHUB_TOKEN`). Both fail on a protected branch.
-For this bot-owned, fully-generated repo the simplest reliable setup is to leave
-`production` **unprotected**, or to allow **both** the GitHub App and the
-`github-actions` bot to **bypass** push restrictions. (Requiring PRs would mean wiring
-PR + auto-merge into both the ship job and the commit-back — more machinery, no real
-benefit here since the workflows are the source of authority.)
+The spec ship uses rundit-back's GitHub App token to push to
+`rundit-sdk:production`. If the branch is protected, allow that App to push or ship
+the spec through a PR. The SDK publish workflow only reads Git and needs no push
+permissions or branch-protection bypass.

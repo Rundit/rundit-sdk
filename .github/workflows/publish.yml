@@ -32,12 +32,13 @@ jobs:
   publish-sdk:
     runs-on: ubuntu-latest
     permissions:
-      contents: write # commit versions.json on release
+      contents: read
       id-token: write # npm provenance via OIDC trusted publishing
     steps:
       - uses: actions/checkout@v6
         with:
-          fetch-depth: 0
+          # Resolve the current branch after acquiring the release slot.
+          ref: ${{ github.ref }}
 
       - uses: actions/setup-node@v6
         with:
@@ -58,10 +59,8 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ github.ref_name }}" == 'production' ]]; then
-            echo 'channel=release' >> "$GITHUB_OUTPUT"
             echo 'dist_tag=latest' >> "$GITHUB_OUTPUT"
           else
-            echo 'channel=rc' >> "$GITHUB_OUTPUT"
             echo 'dist_tag=rc' >> "$GITHUB_OUTPUT"
           fi
 
@@ -126,45 +125,20 @@ jobs:
         # latest is on v2.
         run: echo "type=patch" >> "$GITHUB_OUTPUT"
 
-      - name: Publish rc (develop)
-        id: publish_rc
-        if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'rc'
-        # rc artifacts are previews; not committed back. The version is
-        # bump(lastStable, type)-rc.<run_number>.
-        run: |
-          npm run sdk:generate
-          npm run sdk:publish
-        env:
-          SDK_PRERELEASE_CHANNEL: rc
-          SDK_PRERELEASE_BUMP: ${{ steps.bump.outputs.type }}
-          SDK_PRERELEASE_ITERATION: ${{ github.run_number }}
-          SDK_NPM_DIST_TAG: rc
-
-      - name: Publish release (production)
-        id: publish_release
-        if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
-        # Bump versions.json by the classified type, bake it into the packages, publish
-        # to the latest tag, then commit versions.json below.
+      - name: Publish SDK packages
+        id: publish
+        if: steps.drift.outputs.publish == 'true'
         run: |
           npm run sdk:version:bump -- ${{ steps.bump.outputs.type }}
           npm run sdk:generate
           npm run sdk:publish
-
-      - name: Commit released SDK versions
-        if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
-        shell: bash
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          node scripts/persist-versions.cjs "$GITHUB_REF_NAME"
+        env:
+          SDK_NPM_DIST_TAG: ${{ steps.channel.outputs.dist_tag }}
+          # A rerun supersedes a partial rc publish with a fresh version.
+          SDK_PRERELEASE_ITERATION: ${{ github.run_number }}.${{ github.run_attempt }}
 
       - name: Rebuild hosted MCP from published SDK
-        # A metadata commit failure must not suppress deployment of an already
-        # published SDK. Keep failed publishes and cancelled runs out of this path.
-        if: >-
-          ${{ !cancelled() &&
-              (steps.publish_rc.outcome == 'success' || steps.publish_release.outcome == 'success' ||
-               (inputs.redeploy_mcp_only == true && steps.drift.outcome == 'success')) }}
+        if: steps.publish.outcome == 'success' || inputs.redeploy_mcp_only == true
         timeout-minutes: 10
         shell: bash
         run: |
@@ -176,6 +150,6 @@ jobs:
           fi
         env:
           SDK_DIST_TAG: ${{ steps.channel.outputs.dist_tag }}
-          SDK_PUBLISHED: ${{ steps.publish_rc.outcome == 'success' || steps.publish_release.outcome == 'success' }}
+          SDK_PUBLISHED: ${{ steps.publish.outcome == 'success' }}
           CLOUD66_MCP_REDEPLOY_HOOK_TEST: ${{ secrets.CLOUD66_MCP_REDEPLOY_HOOK_TEST }}
           CLOUD66_MCP_REDEPLOY_HOOK_PROD: ${{ secrets.CLOUD66_MCP_REDEPLOY_HOOK_PROD }}

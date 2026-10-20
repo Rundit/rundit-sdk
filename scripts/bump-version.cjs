@@ -1,17 +1,9 @@
 /**
- * Bumps the published version of one or more SDK packages in versions.json.
+ * Selects a shared release version above npm's latest versions and the configured
+ * minimums in versions.json. Only the local build copy is updated, never Git.
  *
- * Versions live in a shared JSON file (not in each package.json) because package.json
- * for each SDK is regenerated from scratch on every `sdk:generate` run; the JSON file
- * is the durable source the generator reads from.
- *
- * Usage:
- *   node scripts/sdk/bump-version.cjs [patch|minor|major] [packageKey ...]
- *   SDK_VERSION_BUMP=minor node scripts/sdk/bump-version.cjs
- *
- * With no package keys, every entry in contract.cjs is bumped. Release type defaults
- * to 'patch'. The baseline is the newer of versions.json and npm's latest stable
- * release, so queued checkouts cannot reuse a version published by a prior run.
+ * Usage: node scripts/bump-version.cjs [patch|minor|major] [packageKey ...]
+ * For previews, set SDK_NPM_DIST_TAG=rc and SDK_PRERELEASE_ITERATION=run.attempt.
  */
 const fs = require('fs')
 const path = require('path')
@@ -31,6 +23,7 @@ if (!validReleaseTypes.has(releaseType)) {
 const targetKeys = packageKeys.length > 0 ? packageKeys : Object.keys(sdkPackages)
 const versions = loadVersions()
 
+let baseline = '0.0.0'
 for (const packageKey of targetKeys) {
   if (!sdkPackages[packageKey]) {
     console.error(`Unknown SDK package key: ${packageKey}`)
@@ -39,9 +32,22 @@ for (const packageKey of targetKeys) {
 
   const declared = versions[packageKey] || '0.0.0'
   const published = readPublishedVersion(sdkPackages[packageKey].packageName) || '0.0.0'
-  const baseline = compareVersions(published, declared) > 0 ? published : declared
-  versions[packageKey] = bumpVersion(baseline, releaseType)
-  console.log(`${packageKey}: ${versions[packageKey]}`)
+  for (const candidate of [declared, published]) {
+    if (compareVersions(candidate, baseline) > 0) baseline = candidate
+  }
+}
+
+let nextVersion = bumpVersion(baseline, releaseType)
+if (process.env.SDK_NPM_DIST_TAG === 'rc') {
+  const iteration = process.env.SDK_PRERELEASE_ITERATION
+  if (!/^[1-9]\d*\.[1-9]\d*$/.test(iteration || '')) {
+    throw new Error('SDK_PRERELEASE_ITERATION must be run.attempt (positive integers)')
+  }
+  nextVersion += `-rc.${iteration}`
+}
+for (const packageKey of targetKeys) {
+  versions[packageKey] = nextVersion
+  console.log(`${packageKey}: ${nextVersion}`)
 }
 
 fs.writeFileSync(versionsPath, JSON.stringify(versions, null, 2) + '\n')
