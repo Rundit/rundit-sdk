@@ -56,8 +56,17 @@ function main() {
       JSON.stringify(createPackageJson(packageConfig, packageVersions[audience] || '0.0.0-development'), null, 2) +
         '\n',
     )
-    writeFile(packageDir, 'README.md', createReadme(packageConfig, packageRoutes))
-    writeFile(packageDir, 'AGENTS.md', createAgentsGuide(packageConfig, packageRoutes))
+    writeFile(
+      packageDir,
+      'README.md',
+      createReadme(packageConfig, packageRoutes) + (supportsAvatarUpload(packageRoutes) ? avatarUploadGuide() : ''),
+    )
+    writeFile(
+      packageDir,
+      'AGENTS.md',
+      createAgentsGuide(packageConfig, packageRoutes) +
+        (supportsAvatarUpload(packageRoutes) ? avatarUploadGuide() : ''),
+    )
     writeFile(
       packageDir,
       'ai-manifest.json',
@@ -495,6 +504,12 @@ function createAiManifest(packageConfig, packageRoutes) {
   }
 }
 
+function supportsAvatarUpload(routes) {
+  return ['prepareAvatarUpload', 'completeAvatarUpload'].every((operation) =>
+    routes.some((route) => route.namespace === 'profiles' && route.operation === operation),
+  )
+}
+
 function createRuntimeSource(packageConfig, packageRoutes) {
   const namespaces = buildNamespaceMap(packageRoutes)
   const routeManifest = createRouteManifest(namespaces)
@@ -625,6 +640,8 @@ function createRequester(options) {
   }
 }
 
+${supportsAvatarUpload(packageRoutes) ? fs.readFileSync(path.join(__dirname, 'templates/profile-avatar-upload.js'), 'utf8') : ''}
+
 ${namespaceFactories}
 
 export function ${packageConfig.factoryName}(options) {
@@ -640,7 +657,10 @@ export function ${packageConfig.factoryName}(options) {
 
   return {
 ${Object.keys(namespaces)
-  .map((namespace) => `    ${namespace}: create${toPascalCase(namespace)}Namespace(request),`)
+  .map(
+    (namespace) =>
+      `    ${namespace}: create${toPascalCase(namespace)}Namespace(request${namespace === 'profiles' && supportsAvatarUpload(packageRoutes) ? ', resolveFetch(options.fetch)' : ''}),`,
+  )
   .join('\n')}
   }
 }
@@ -687,7 +707,20 @@ export interface ${packageConfig.optionsTypeName} {
   headers?: Record<string, string>
 }
 
-${typeContext.typeDeclarations.join('\n\n')}${typeContext.typeDeclarations.length > 0 ? '\n\n' : ''}${queryTypeBlocks}${queryTypeBlocks ? '\n\n' : ''}${namespaceInterfaces}
+${
+  supportsAvatarUpload(packageRoutes)
+    ? `export interface ProfileAvatarUploadInput {
+  companyId: number
+  /** Raw bytes or a browser File/Blob. Bytes never pass through JSON. */
+  file: Blob | Uint8Array
+  filename: string
+  /** Required for bytes; defaults to the MIME type of a Blob/File. */
+  filetype?: 'image/jpeg' | 'image/png' | 'image/webp'
+}
+
+`
+    : ''
+}${typeContext.typeDeclarations.join('\n\n')}${typeContext.typeDeclarations.length > 0 ? '\n\n' : ''}${queryTypeBlocks}${queryTypeBlocks ? '\n\n' : ''}${namespaceInterfaces}
 
 export interface ${packageConfig.clientTypeName} {
 ${clientInterfaceFields}
@@ -851,10 +884,19 @@ function buildTypeContext(spec, routes) {
 function createNamespaceFactory(namespace, routes) {
   const methods = routes.map((route) => createMethodImplementation(route)).join('\n')
 
-  return `function create${toPascalCase(namespace)}Namespace(request) {
+  if (!supportsAvatarUpload(routes)) {
+    return `function create${toPascalCase(namespace)}Namespace(request) {
   return {
 ${methods}
   }
+}`
+  }
+  return `function create${toPascalCase(namespace)}Namespace(request, uploadFetch) {
+  const namespace = {
+${methods}
+  }
+  namespace.uploadAvatar = createProfileAvatarUploader(namespace, uploadFetch)
+  return namespace
 }`
 }
 
@@ -880,7 +922,11 @@ function createMethodImplementation(route) {
 }
 
 function createNamespaceInterface(namespace, routes) {
-  const methods = routes.map((route) => createMethodSignature(route)).join('\n')
+  const methods =
+    routes.map((route) => createMethodSignature(route)).join('\n') +
+    (supportsAvatarUpload(routes)
+      ? '\n  /** Upload raw image bytes and attach the verified avatar. Storage receives no API credentials. */\n  uploadAvatar(id: string, input: ProfileAvatarUploadInput, init?: RequestOptions): Promise<ProfilesCompleteAvatarUploadResponse>'
+      : '')
   return `export interface ${toPascalCase(namespace)}Namespace {
 ${methods}
 }`
@@ -1257,3 +1303,15 @@ function writeFile(dir, fileName, content) {
 }
 
 main()
+
+function avatarUploadGuide() {
+  return `
+## Profile avatar uploads
+
+Use \`client.profiles.uploadAvatar(id, { companyId, file, filename, filetype })\` with a browser File/Blob or Uint8Array (including Node Buffer). MIME type is required for bytes and otherwise defaults to the Blob type. Supports non-animated JPEG, PNG and WebP, up to 5 MiB and 16 megapixels. Create the profile first.
+
+The helper prepares an upload, sends the exact raw bytes directly to storage without Rundit API credentials, then completes and returns the updated profile. It accepts RequestOptions.signal. A failed upload does not replace the current avatar.
+
+For clients that control their own transfer, use \`prepareAvatarUpload\`, PUT the raw bytes to \`uploadUrl\` with the returned headers, then call \`completeAvatarUpload\`. Do not use base64, JSON or multipart for the PUT. Upload URLs expire and allow one write; obtain a fresh URL after expiration. Retrying completion for the currently attached file is safe. Remove an avatar with \`update(id, { companyId, avatarImageFileUuid: null })\`. Browser integrations also require the storage bucket CORS configuration to allow their origin, PUT, Content-Type and If-None-Match.
+`
+}
