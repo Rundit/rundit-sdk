@@ -21,7 +21,8 @@ on:
 
 concurrency:
   group: sdk-publish-${{ github.ref }}
-  cancel-in-progress: true
+  # Finish publication and the MCP handoff before starting another release.
+  cancel-in-progress: false
 
 jobs:
   publish-sdk:
@@ -147,13 +148,36 @@ jobs:
           git commit -m "chore: publish SDK packages [skip ci]"
           git push
 
-      - name: Rebuild hosted MCP
-        # A failed source commit must not skip the hook after successful publication.
+      - name: Mint token to dispatch MCP update
+        id: mcp-token
+        # A failed source commit must not skip the handoff after publication.
         if: ${{ !cancelled() && (steps.publish_rc.outcome == 'success' || steps.publish_release.outcome == 'success') }}
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.SDK_BOT_APP_ID }}
+          private-key: ${{ secrets.SDK_BOT_PRIVATE_KEY }}
+          owner: Rundit
+          repositories: rundit-mcp
+          permission-actions: write
+
+      - name: Request MCP dependency update and deployment
+        if: ${{ !cancelled() && steps.mcp-token.outcome == 'success' && (steps.publish_rc.outcome == 'success' || steps.publish_release.outcome == 'success') }}
         env:
-          MCP_REDEPLOY_HOOK: ${{ secrets[steps.channel.outputs.channel == 'release' && 'CLOUD66_MCP_REDEPLOY_HOOK_PROD' || 'CLOUD66_MCP_REDEPLOY_HOOK_TEST'] }}
+          GH_TOKEN: ${{ steps.mcp-token.outputs.token }}
+          SDK_CHANNEL: ${{ steps.channel.outputs.dist_tag }}
+        shell: bash
         run: |
-          if ! curl --silent --fail --output /dev/null --max-time 30 --request POST "$MCP_REDEPLOY_HOOK"; then
-            echo '::error::MCP rebuild webhook failed.'
-            exit 1
-          fi
+          # Read the exact artifact just published, not a mutable npm dist-tag.
+          sdk_version="$(node -p 'require("./packages/client/package.json").version')"
+          gh workflow run update-sdk.yml \
+            --repo Rundit/rundit-mcp \
+            --ref main \
+            --raw-field "channel=$SDK_CHANNEL" \
+            --raw-field "version=$sdk_version"
+          echo "Requested MCP update for @rundit-sdk/client@$sdk_version ($SDK_CHANNEL)."
+          {
+            echo '### MCP deployment requested'
+            echo "SDK version: $sdk_version; channel: $SDK_CHANNEL."
+            echo '[Follow MCP validation and deployment](https://github.com/Rundit/rundit-mcp/actions/workflows/update-sdk.yml).'
+            echo 'This confirms dispatch only; MCP checks and the Cloud 66 rollout run separately.'
+          } >> "$GITHUB_STEP_SUMMARY"
