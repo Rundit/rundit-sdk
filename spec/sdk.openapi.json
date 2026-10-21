@@ -631,6 +631,138 @@
         "x-sdk-operation": "delete"
       }
     },
+    "/api/v2/sdk/profiles/{id}/avatar/uploads": {
+      "post": {
+        "description": "Returns a short-lived, single-use PUT URL for an existing profile. Accepts JPEG, PNG or WebP, up to 5 MiB and 16 megapixels. The host or client must send the exact raw image bytes to uploadUrl with the returned headers; do not send base64, multipart or JSON, and never forward the Rundit API key. This tool does not read chat attachments or local paths. After uploading, call profiles.completeAvatarUpload with fileUuid. Requires edit access to every company associated with the profile.",
+        "operationId": "profiles.prepareAvatarUpload",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SdkPrepareProfileAvatarUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkProfileAvatarUploadDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Prepare a profile avatar upload",
+        "tags": [
+          "sdk-profiles"
+        ],
+        "x-api-key-scopes": [
+          "profiles:write"
+        ],
+        "x-mcp-annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false
+        },
+        "x-sdk-audiences": [
+          "client"
+        ],
+        "x-sdk-namespace": "profiles",
+        "x-sdk-operation": "prepareAvatarUpload"
+      }
+    },
+    "/api/v2/sdk/profiles/{id}/avatar/uploads/complete": {
+      "post": {
+        "description": "Call after sending raw image bytes to the URL returned by prepareAvatarUpload. Verifies upload ownership, actual size and image contents, then atomically attaches it and replaces the previous avatar. Requires the same uploading user, matching profile/company, and edit access to every associated company. Retrying the currently attached upload is safe. A failed completion preserves the existing avatar. Returns the updated profile and avatarImageUrl. Remove an avatar through profiles.update with avatarImageFileUuid: null.",
+        "operationId": "profiles.completeAvatarUpload",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SdkCompleteProfileAvatarUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkProfileDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Complete and attach a profile avatar upload",
+        "tags": [
+          "sdk-profiles"
+        ],
+        "x-api-key-scopes": [
+          "profiles:write"
+        ],
+        "x-mcp-annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true
+        },
+        "x-sdk-audiences": [
+          "client"
+        ],
+        "x-sdk-namespace": "profiles",
+        "x-sdk-operation": "completeAvatarUpload"
+      }
+    },
     "/api/v2/sdk/companies/dashboards": {
       "post": {
         "description": "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` (case-insensitive exact match on full name or `shortName`) to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `metricsPointLimit` keeps only the most recent N points per metric (`1` = latest dated point; set `metricsTo` to today to exclude future values) — full histories for many companies add up quickly. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively). Dashboards come back in the order the `companyIds` were requested, so `limit`/`cursor` paging is stable.",
@@ -3974,6 +4106,104 @@
         },
         "required": [
           "companyId"
+        ]
+      },
+      "SdkPrepareProfileAvatarUploadDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Company context for this directory entry. Must match an existing association; profiles cannot be moved to another company."
+          },
+          "filename": {
+            "type": "string",
+            "description": "Original image filename.",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "filetype": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ],
+            "description": "Image MIME type. SVG and animated formats are not supported."
+          },
+          "filesize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5242880,
+            "description": "Exact file size in bytes; maximum 5 MiB."
+          }
+        },
+        "required": [
+          "companyId",
+          "filename",
+          "filetype",
+          "filesize"
+        ]
+      },
+      "SdkProfileAvatarUploadDto": {
+        "type": "object",
+        "properties": {
+          "fileUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "description": "Short-lived upload URL. Treat it as a credential; do not persist or log it."
+          },
+          "httpMethod": {
+            "type": "string",
+            "enum": [
+              "PUT"
+            ],
+            "description": "Send raw image bytes using this HTTP method, outside the MCP JSON payload."
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Include these headers on the upload. Do not forward the Rundit API key. If-None-Match prevents overwriting an uploaded object."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "description": "Upload URL lifetime in seconds. Obtain a fresh upload if it expires."
+          },
+          "maxBytes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fileUuid",
+          "uploadUrl",
+          "httpMethod",
+          "headers",
+          "expiresIn",
+          "maxBytes"
+        ]
+      },
+      "SdkCompleteProfileAvatarUploadDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Company context for this directory entry. Must match an existing association; profiles cannot be moved to another company."
+          },
+          "fileUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "File UUID returned by prepareAvatarUpload."
+          }
+        },
+        "required": [
+          "companyId",
+          "fileUuid"
         ]
       },
       "GetBatchDashboardBodyDto": {
