@@ -20,7 +20,7 @@ const client = createClient({
   // baseUrl: 'https://test.rundit.com/api/v2/sdk',
 })
 
-await client.companies.getDashboards({ companyIds: [123], currency: 'USD' })
+await client.profiles.getConfig({ sections: ['example'] })
 ```
 
 ## Authentication
@@ -42,6 +42,80 @@ await client.companies.getDashboards({ companyIds: [123], currency: 'USD' })
 
 
 ## Methods
+
+## profiles
+
+### `profiles.getConfig`
+
+Get allowed profile field values and labels
+
+- Call: `client.profiles.getConfig({ sections: ['example'] })`
+- HTTP: `GET /profiles/config`
+- Returns: `ProfilesGetConfigResponse`
+- Params: query: sections? (("roles" | "positions" | "educationLevels" | "genders" | "races" | "nationalities")[])
+
+### `profiles.list`
+
+List the founders, management and board directory
+
+- Call: `client.profiles.list({ limit: 123 })`
+- HTTP: `GET /profiles`
+- Returns: `ProfilesListResponse`
+- Params: query: limit? (number), cursor? (string), firstTimeFounder? (boolean), position? ("chief-executive" | "chief-operating" | "chief-financial" | "chief-information" | "chief-technology" | "chief-marketing" | "chief-human-resources" | "chief-design" | "chief-data" | "chief-product" | "chief-customer" | "chief-revenue" | "chief-sales" | "president" | "vice-president" | "vp-operations" | "vp-finance" | "vp-technology" | "vp-marketing" | "vp-sales" | "vp-human-resources" | "vp-product" | "vp-design" | "vp-customer-support" | "vp-business-development" | "head-operations" | "head-finance" | "head-technology" | "head-marketing" | "head-human-resources" | "head-product" | "head-design" | "head-customer-support" | "head-business-development" | "lead-operations" | "lead-finance" | "lead-technology" | "lead-marketing" | "lead-human-resources" | "lead-product" | "lead-design" | "lead-customer-support" | "lead-business-development" | "chief-mobility-officer" | "evp-business-and-legal-affairs" | "global-general-manager" | "evp-international-co-productions" | "chief-creative-officer" | "executive-chairman" | "chief-experience-n-strategy-officer" | "chief-corporate-officer" | "chief-of-staff" | "chief-people-officer" | "chief-privacy-officer" | "chief-legal-officer" | "svp-people-operations-n-experience" | "svp-marketing" | "svp-product-n-analytics" | "evp-strategic-partnerships" | "svp-of-sales" | "svp-strategic-initiatives" | "head-of-talent" | "head-of-partnerships" | "engineering-manager" | "director-of-customer-success" | "chief-compliance-officer" | "chief-strategy-officer" | "general-counsel" | "vp-engineering" | "director-of-engineering" | "chief-engineer" | "chief-medical-officer" | "executive-editor" | "managing-editor" | "vp-strategy-and-transformation" | "chief-business-officer" | "advisor" | "other"), positions? (("chief-executive" | "chief-operating" | "chief-financial" | "chief-information" | "chief-technology" | "chief-marketing" | "chief-human-resources" | "chief-design" | "chief-data" | "chief-product" | "chief-customer" | "chief-revenue" | "chief-sales" | "president" | "vice-president" | "vp-operations" | "vp-finance" | "vp-technology" | "vp-marketing" | "vp-sales" | "vp-human-resources" | "vp-product" | "vp-design" | "vp-customer-support" | "vp-business-development" | "head-operations" | "head-finance" | "head-technology" | "head-marketing" | "head-human-resources" | "head-product" | "head-design" | "head-customer-support" | "head-business-development" | "lead-operations" | "lead-finance" | "lead-technology" | "lead-marketing" | "lead-human-resources" | "lead-product" | "lead-design" | "lead-customer-support" | "lead-business-development" | "chief-mobility-officer" | "evp-business-and-legal-affairs" | "global-general-manager" | "evp-international-co-productions" | "chief-creative-officer" | "executive-chairman" | "chief-experience-n-strategy-officer" | "chief-corporate-officer" | "chief-of-staff" | "chief-people-officer" | "chief-privacy-officer" | "chief-legal-officer" | "svp-people-operations-n-experience" | "svp-marketing" | "svp-product-n-analytics" | "evp-strategic-partnerships" | "svp-of-sales" | "svp-strategic-initiatives" | "head-of-talent" | "head-of-partnerships" | "engineering-manager" | "director-of-customer-success" | "chief-compliance-officer" | "chief-strategy-officer" | "general-counsel" | "vp-engineering" | "director-of-engineering" | "chief-engineer" | "chief-medical-officer" | "executive-editor" | "managing-editor" | "vp-strategy-and-transformation" | "chief-business-officer" | "advisor" | "other")[]), companyIds? (number[]), companyGroupIds? (number[]), companyNameSearch? (string[]), nameSearch? (string[]), rolesInCompany? (("founder-cofounder" | "management" | "board-member" | "board-chairman")[])
+
+### `profiles.create`
+
+Create a founder, management or board profile
+
+- Call: `client.profiles.create({ companyId: 123, name: 'example' })`
+- HTTP: `POST /profiles`
+- Returns: `ProfilesCreateResponse`
+- Params: body: ProfilesCreateBody
+
+### `profiles.getOne`
+
+Get a full directory profile
+
+- Call: `client.profiles.getOne('123', { companyId: 123 })`
+- HTTP: `GET /profiles/:id`
+- Returns: `ProfilesGetOneResponse`
+- Params: path: id (string); query: companyId (number)
+
+### `profiles.update`
+
+Partially update a directory profile
+
+- Call: `client.profiles.update('123', { companyId: 123 })`
+- HTTP: `PATCH /profiles/:id`
+- Returns: `ProfilesUpdateResponse`
+- Params: path: id (string); body: ProfilesUpdateBody
+
+### `profiles.delete`
+
+Delete a directory profile
+
+- Call: `client.profiles.delete('123', { companyId: 123 })`
+- HTTP: `DELETE /profiles/:id`
+- Returns: `ProfilesDeleteResponse`
+- Params: path: id (string); query: companyId (number)
+
+### `profiles.prepareAvatarUpload`
+
+Prepare a profile avatar upload
+
+- Call: `client.profiles.prepareAvatarUpload('123', { companyId: 123, filename: 'example', filetype: "image/jpeg", filesize: 123 })`
+- HTTP: `POST /profiles/:id/avatar/uploads`
+- Returns: `ProfilesPrepareAvatarUploadResponse`
+- Params: path: id (string); body: ProfilesPrepareAvatarUploadBody
+
+### `profiles.completeAvatarUpload`
+
+Complete and attach a profile avatar upload
+
+- Call: `client.profiles.completeAvatarUpload('123', { companyId: 123, fileUuid: '123' })`
+- HTTP: `POST /profiles/:id/avatar/uploads/complete`
+- Returns: `ProfilesCompleteAvatarUploadResponse`
+- Params: path: id (string); body: ProfilesCompleteAvatarUploadBody
 
 ## companies
 

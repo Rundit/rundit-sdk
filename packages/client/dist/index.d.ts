@@ -22,6 +22,134 @@ export interface CreateClientOptions {
   headers?: Record<string, string>
 }
 
+export interface SdkProfileOptionDto {
+  value: string
+  label: string
+}
+
+export interface SdkProfilesConfigDto {
+  roles?: SdkProfileOptionDto[]
+  positions?: SdkProfileOptionDto[]
+  educationLevels?: SdkProfileOptionDto[]
+  genders?: SdkProfileOptionDto[]
+  races?: SdkProfileOptionDto[]
+  nationalities?: SdkProfileOptionDto[]
+}
+
+export interface SdkCompanyReferenceDto {
+  id: number
+  name: string
+  type: string | null
+}
+
+export interface SdkProfileDto {
+  surname: string | null
+  email: string | null
+  telephone: string | null
+  country: string | null
+  avatarImageFileUuid: string | null
+  expertiseAreas: string | null
+  educationLevel: string | null
+  linkedIn: string | null
+  github: string | null
+  website: string | null
+  gender: string | null
+  birthYear: number | null
+  race: string | null
+  nationality: string | null
+  ethnicity: string | null
+  twitter: string | null
+  facebook: string | null
+  rolesInCompany: ("founder-cofounder" | "management" | "board-member" | "board-chairman")[]
+  firstTimeFounder: boolean | null
+  position: "chief-executive" | "chief-operating" | "chief-financial" | "chief-information" | "chief-technology" | "chief-marketing" | "chief-human-resources" | "chief-design" | "chief-data" | "chief-product" | "chief-customer" | "chief-revenue" | "chief-sales" | "president" | "vice-president" | "vp-operations" | "vp-finance" | "vp-technology" | "vp-marketing" | "vp-sales" | "vp-human-resources" | "vp-product" | "vp-design" | "vp-customer-support" | "vp-business-development" | "head-operations" | "head-finance" | "head-technology" | "head-marketing" | "head-human-resources" | "head-product" | "head-design" | "head-customer-support" | "head-business-development" | "lead-operations" | "lead-finance" | "lead-technology" | "lead-marketing" | "lead-human-resources" | "lead-product" | "lead-design" | "lead-customer-support" | "lead-business-development" | "chief-mobility-officer" | "evp-business-and-legal-affairs" | "global-general-manager" | "evp-international-co-productions" | "chief-creative-officer" | "executive-chairman" | "chief-experience-n-strategy-officer" | "chief-corporate-officer" | "chief-of-staff" | "chief-people-officer" | "chief-privacy-officer" | "chief-legal-officer" | "svp-people-operations-n-experience" | "svp-marketing" | "svp-product-n-analytics" | "evp-strategic-partnerships" | "svp-of-sales" | "svp-strategic-initiatives" | "head-of-talent" | "head-of-partnerships" | "engineering-manager" | "director-of-customer-success" | "chief-compliance-officer" | "chief-strategy-officer" | "general-counsel" | "vp-engineering" | "director-of-engineering" | "chief-engineer" | "chief-medical-officer" | "executive-editor" | "managing-editor" | "vp-strategy-and-transformation" | "chief-business-officer" | "advisor" | "other"
+  id: string
+  name: string | null
+  companyId: number
+  company: SdkCompanyReferenceDto
+  avatarImageUrl: string | null
+}
+
+export interface SdkPaginationMetaDto {
+  nextCursor: string | null
+}
+
+export interface SdkProfilesListResponseDto {
+  data: SdkProfileDto[]
+  meta: SdkPaginationMetaDto
+}
+
+export interface SdkCreateProfileDto {
+  surname?: string | null
+  email?: string | null
+  telephone?: string | null
+  country?: string | null
+  avatarImageFileUuid?: string | null
+  expertiseAreas?: string | null
+  educationLevel?: "school" | "high-school" | "college" | "associate" | "bachelor" | "master" | "professional" | "doctoral"
+  linkedIn?: string | null
+  github?: string | null
+  website?: string | null
+  gender?: "male" | "female" | "other" | "n/a"
+  birthYear?: number | null
+  race?: "white" | "american-indian" | "asian" | "black" | "pacific" | "two-or-more" | "other"
+  nationality?: string | null
+  ethnicity?: string | null
+  twitter?: string | null
+  facebook?: string | null
+  rolesInCompany?: ("founder-cofounder" | "management" | "board-member" | "board-chairman")[]
+  position?: "chief-executive" | "chief-operating" | "chief-financial" | "chief-information" | "chief-technology" | "chief-marketing" | "chief-human-resources" | "chief-design" | "chief-data" | "chief-product" | "chief-customer" | "chief-revenue" | "chief-sales" | "president" | "vice-president" | "vp-operations" | "vp-finance" | "vp-technology" | "vp-marketing" | "vp-sales" | "vp-human-resources" | "vp-product" | "vp-design" | "vp-customer-support" | "vp-business-development" | "head-operations" | "head-finance" | "head-technology" | "head-marketing" | "head-human-resources" | "head-product" | "head-design" | "head-customer-support" | "head-business-development" | "lead-operations" | "lead-finance" | "lead-technology" | "lead-marketing" | "lead-human-resources" | "lead-product" | "lead-design" | "lead-customer-support" | "lead-business-development" | "chief-mobility-officer" | "evp-business-and-legal-affairs" | "global-general-manager" | "evp-international-co-productions" | "chief-creative-officer" | "executive-chairman" | "chief-experience-n-strategy-officer" | "chief-corporate-officer" | "chief-of-staff" | "chief-people-officer" | "chief-privacy-officer" | "chief-legal-officer" | "svp-people-operations-n-experience" | "svp-marketing" | "svp-product-n-analytics" | "evp-strategic-partnerships" | "svp-of-sales" | "svp-strategic-initiatives" | "head-of-talent" | "head-of-partnerships" | "engineering-manager" | "director-of-customer-success" | "chief-compliance-officer" | "chief-strategy-officer" | "general-counsel" | "vp-engineering" | "director-of-engineering" | "chief-engineer" | "chief-medical-officer" | "executive-editor" | "managing-editor" | "vp-strategy-and-transformation" | "chief-business-officer" | "advisor" | "other"
+  firstTimeFounder?: boolean | null
+  companyId: number
+  name: string
+}
+
+export interface SdkUpdateProfileDto {
+  surname?: string | null
+  email?: string | null
+  telephone?: string | null
+  country?: string | null
+  avatarImageFileUuid?: string | null
+  expertiseAreas?: string | null
+  educationLevel?: "school" | "high-school" | "college" | "associate" | "bachelor" | "master" | "professional" | "doctoral"
+  linkedIn?: string | null
+  github?: string | null
+  website?: string | null
+  gender?: "male" | "female" | "other" | "n/a"
+  birthYear?: number | null
+  race?: "white" | "american-indian" | "asian" | "black" | "pacific" | "two-or-more" | "other"
+  nationality?: string | null
+  ethnicity?: string | null
+  twitter?: string | null
+  facebook?: string | null
+  rolesInCompany?: ("founder-cofounder" | "management" | "board-member" | "board-chairman")[]
+  position?: "chief-executive" | "chief-operating" | "chief-financial" | "chief-information" | "chief-technology" | "chief-marketing" | "chief-human-resources" | "chief-design" | "chief-data" | "chief-product" | "chief-customer" | "chief-revenue" | "chief-sales" | "president" | "vice-president" | "vp-operations" | "vp-finance" | "vp-technology" | "vp-marketing" | "vp-sales" | "vp-human-resources" | "vp-product" | "vp-design" | "vp-customer-support" | "vp-business-development" | "head-operations" | "head-finance" | "head-technology" | "head-marketing" | "head-human-resources" | "head-product" | "head-design" | "head-customer-support" | "head-business-development" | "lead-operations" | "lead-finance" | "lead-technology" | "lead-marketing" | "lead-human-resources" | "lead-product" | "lead-design" | "lead-customer-support" | "lead-business-development" | "chief-mobility-officer" | "evp-business-and-legal-affairs" | "global-general-manager" | "evp-international-co-productions" | "chief-creative-officer" | "executive-chairman" | "chief-experience-n-strategy-officer" | "chief-corporate-officer" | "chief-of-staff" | "chief-people-officer" | "chief-privacy-officer" | "chief-legal-officer" | "svp-people-operations-n-experience" | "svp-marketing" | "svp-product-n-analytics" | "evp-strategic-partnerships" | "svp-of-sales" | "svp-strategic-initiatives" | "head-of-talent" | "head-of-partnerships" | "engineering-manager" | "director-of-customer-success" | "chief-compliance-officer" | "chief-strategy-officer" | "general-counsel" | "vp-engineering" | "director-of-engineering" | "chief-engineer" | "chief-medical-officer" | "executive-editor" | "managing-editor" | "vp-strategy-and-transformation" | "chief-business-officer" | "advisor" | "other"
+  firstTimeFounder?: boolean | null
+  companyId: number
+  name?: string
+}
+
+export interface SdkProfileAvatarUploadDto {
+  fileUuid: string
+  uploadUrl: string
+  httpMethod: "PUT"
+  headers: {  }
+  expiresIn: number
+  maxBytes: number
+}
+
+export interface SdkPrepareProfileAvatarUploadDto {
+  companyId: number
+  filename: string
+  filetype: "image/jpeg" | "image/png" | "image/webp"
+  filesize: number
+}
+
+export interface SdkCompleteProfileAvatarUploadDto {
+  companyId: number
+  fileUuid: string
+}
+
 export interface SdkCompanyDto {
   id: number
   name: string
@@ -43,12 +171,6 @@ export interface SdkCompanyDto {
   established?: string | null
   fundingTotal?: number | null
   companyGroupIds?: number[]
-}
-
-export interface SdkCompanyReferenceDto {
-  id: number
-  name: string
-  type: string | null
 }
 
 export interface SdkCompanyGroupReferenceDto {
@@ -374,10 +496,6 @@ export interface SdkCompanyDashboardDto {
   metrics: SdkCompanyDashboardMetricsDto
   transactions: (SdkEquityTransactionDto | SdkConvertibleNoteTransactionDto | SdkFutureEquityAgreementTransactionDto | SdkExtendTransactionDto | SdkConversionTransactionDto | SdkExitTransactionDto | SdkValuationChangeTransactionDto | SdkInsolvencyTransactionDto | SdkOtherInvestmentTransactionDto)[]
   reports: SdkCompanyReportSummaryDto[]
-}
-
-export interface SdkPaginationMetaDto {
-  nextCursor: string | null
 }
 
 export interface SdkBatchDashboardResponseDto {
@@ -977,6 +1095,30 @@ export interface SdkCompanyReportDto {
   attachments: SdkCompanyReportAttachmentDto[]
 }
 
+export type ProfilesGetConfigResponse = SdkProfilesConfigDto
+
+export type ProfilesListResponse = SdkProfilesListResponseDto
+
+export type ProfilesCreateResponse = SdkProfileDto
+
+export type ProfilesCreateBody = SdkCreateProfileDto
+
+export type ProfilesGetOneResponse = SdkProfileDto
+
+export type ProfilesUpdateResponse = SdkProfileDto
+
+export type ProfilesUpdateBody = SdkUpdateProfileDto
+
+export type ProfilesDeleteResponse = unknown
+
+export type ProfilesPrepareAvatarUploadResponse = SdkProfileAvatarUploadDto
+
+export type ProfilesPrepareAvatarUploadBody = SdkPrepareProfileAvatarUploadDto
+
+export type ProfilesCompleteAvatarUploadResponse = SdkProfileDto
+
+export type ProfilesCompleteAvatarUploadBody = SdkCompleteProfileAvatarUploadDto
+
 export type CompaniesGetDashboardsResponse = SdkBatchDashboardResponseDto
 
 export type CompaniesGetDashboardsBody = GetBatchDashboardBodyDto
@@ -1059,6 +1201,67 @@ export type CompanyReportsListResponse = SdkCompanyReportsListResponseDto
 
 export type CompanyReportsGetOneResponse = SdkCompanyReportDto
 
+export interface ProfilesGetConfigQuery {
+  /**
+   * Return only these reference-data sections. Omit or pass [] for the complete config.
+   */
+  sections?: ("roles" | "positions" | "educationLevels" | "genders" | "races" | "nationalities")[]
+}
+
+export interface ProfilesListQuery {
+  /**
+   * Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.
+   */
+  limit?: number
+  /**
+   * Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   */
+  cursor?: string
+  /**
+   * Filter founders by a recorded Yes/No answer. false does not match unknown answers or non-founders.
+   */
+  firstTimeFounder?: boolean
+  /**
+   * Filter by a company position from profiles.getConfig.
+   */
+  position?: "chief-executive" | "chief-operating" | "chief-financial" | "chief-information" | "chief-technology" | "chief-marketing" | "chief-human-resources" | "chief-design" | "chief-data" | "chief-product" | "chief-customer" | "chief-revenue" | "chief-sales" | "president" | "vice-president" | "vp-operations" | "vp-finance" | "vp-technology" | "vp-marketing" | "vp-sales" | "vp-human-resources" | "vp-product" | "vp-design" | "vp-customer-support" | "vp-business-development" | "head-operations" | "head-finance" | "head-technology" | "head-marketing" | "head-human-resources" | "head-product" | "head-design" | "head-customer-support" | "head-business-development" | "lead-operations" | "lead-finance" | "lead-technology" | "lead-marketing" | "lead-human-resources" | "lead-product" | "lead-design" | "lead-customer-support" | "lead-business-development" | "chief-mobility-officer" | "evp-business-and-legal-affairs" | "global-general-manager" | "evp-international-co-productions" | "chief-creative-officer" | "executive-chairman" | "chief-experience-n-strategy-officer" | "chief-corporate-officer" | "chief-of-staff" | "chief-people-officer" | "chief-privacy-officer" | "chief-legal-officer" | "svp-people-operations-n-experience" | "svp-marketing" | "svp-product-n-analytics" | "evp-strategic-partnerships" | "svp-of-sales" | "svp-strategic-initiatives" | "head-of-talent" | "head-of-partnerships" | "engineering-manager" | "director-of-customer-success" | "chief-compliance-officer" | "chief-strategy-officer" | "general-counsel" | "vp-engineering" | "director-of-engineering" | "chief-engineer" | "chief-medical-officer" | "executive-editor" | "managing-editor" | "vp-strategy-and-transformation" | "chief-business-officer" | "advisor" | "other"
+  /**
+   * Match any of these positions (OR). Intersects with other filters, including scalar position when supplied.
+   */
+  positions?: ("chief-executive" | "chief-operating" | "chief-financial" | "chief-information" | "chief-technology" | "chief-marketing" | "chief-human-resources" | "chief-design" | "chief-data" | "chief-product" | "chief-customer" | "chief-revenue" | "chief-sales" | "president" | "vice-president" | "vp-operations" | "vp-finance" | "vp-technology" | "vp-marketing" | "vp-sales" | "vp-human-resources" | "vp-product" | "vp-design" | "vp-customer-support" | "vp-business-development" | "head-operations" | "head-finance" | "head-technology" | "head-marketing" | "head-human-resources" | "head-product" | "head-design" | "head-customer-support" | "head-business-development" | "lead-operations" | "lead-finance" | "lead-technology" | "lead-marketing" | "lead-human-resources" | "lead-product" | "lead-design" | "lead-customer-support" | "lead-business-development" | "chief-mobility-officer" | "evp-business-and-legal-affairs" | "global-general-manager" | "evp-international-co-productions" | "chief-creative-officer" | "executive-chairman" | "chief-experience-n-strategy-officer" | "chief-corporate-officer" | "chief-of-staff" | "chief-people-officer" | "chief-privacy-officer" | "chief-legal-officer" | "svp-people-operations-n-experience" | "svp-marketing" | "svp-product-n-analytics" | "evp-strategic-partnerships" | "svp-of-sales" | "svp-strategic-initiatives" | "head-of-talent" | "head-of-partnerships" | "engineering-manager" | "director-of-customer-success" | "chief-compliance-officer" | "chief-strategy-officer" | "general-counsel" | "vp-engineering" | "director-of-engineering" | "chief-engineer" | "chief-medical-officer" | "executive-editor" | "managing-editor" | "vp-strategy-and-transformation" | "chief-business-officer" | "advisor" | "other")[]
+  companyIds?: number[]
+  /**
+   * Restrict to companies in these funds
+   */
+  companyGroupIds?: number[]
+  /**
+   * Case-insensitive company name substrings (OR)
+   */
+  companyNameSearch?: string[]
+  /**
+   * Case-insensitive person full-name substrings (OR)
+   */
+  nameSearch?: string[]
+  /**
+   * Match any of these recorded roles; omitted returns the whole directory
+   */
+  rolesInCompany?: ("founder-cofounder" | "management" | "board-member" | "board-chairman")[]
+}
+
+export interface ProfilesGetOneQuery {
+  /**
+   * Company context for this directory entry. Must match an existing association; profiles cannot be moved to another company.
+   */
+  companyId: number
+}
+
+export interface ProfilesDeleteQuery {
+  /**
+   * Company context for this directory entry. Must match an existing association; profiles cannot be moved to another company.
+   */
+  companyId: number
+}
+
 export interface CompaniesGetDashboardQuery {
   /**
    * Reporting currency code (ISO 4217).
@@ -1108,7 +1311,7 @@ export interface CompaniesGetAllQuery {
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1131,7 +1334,7 @@ export interface CompanyGroupsGetAllQuery {
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1150,7 +1353,7 @@ export interface PositionsGetPortfolioSummaryQuery {
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1194,7 +1397,7 @@ export interface PositionsGetCompanyPositionsQuery {
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1236,7 +1439,7 @@ export interface TransactionsGetSummaryQuery {
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1271,7 +1474,7 @@ export interface TransactionsGetCompanyTransactionsQuery {
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1294,7 +1497,7 @@ export interface TransactionsGetTransactionsQuery {
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1321,7 +1524,7 @@ export interface MetricsGetTypesQuery {
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   origin?: "Predefined" | "UserDefined"
@@ -1337,7 +1540,7 @@ export interface CompanyReportsListQuery {
    */
   limit?: number
   /**
-   * Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
+   * Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.
    */
   cursor?: string
   /**
@@ -1368,6 +1571,65 @@ export interface CompanyReportsListQuery {
    * Upper bound for the reporting period date (ISO 8601, inclusive).
    */
   to?: string
+}
+
+export interface ProfilesNamespace {
+  /**
+   * Get allowed profile field values and labels
+   * Reference data for directory CRUD: roles, positions, education levels, genders, races and nationalities. Use sections to request only what you need (e.g. ["roles","positions"]); omitted or [] returns the complete config. Contains no customer profiles. Use the option value, not its label, when writing.
+   * Parameters: query: sections? (("roles" | "positions" | "educationLevels" | "genders" | "races" | "nationalities")[])
+   * Returns: ProfilesGetConfigResponse
+   */
+  getConfig(query?: ProfilesGetConfigQuery, init?: RequestOptions): Promise<ProfilesGetConfigResponse>
+  /**
+   * List the founders, management and board directory
+   * Returns full profile fields for accessible companies, one entry per profile and company. Filter by company ids, funds, company name, person name, recorded roles, firstTimeFounder, position or positions (OR within the array). Filters intersect. firstTimeFounder=false matches recorded No answers only, not unknown answers or non-founders. Omitted roles returns the whole directory. Absence of a role means not recorded, not a verified negative. First-time-founder null means Not specified. Ordered by company id then profile UUID; repeat the original filters when passing the next cursor. Existing legacy free-text values remain readable; format validation applies to supplied write fields.
+   * Parameters: query: limit? (number), cursor? (string), firstTimeFounder? (boolean), position? ("chief-executive" | "chief-operating" | "chief-financial" | "chief-information" | "chief-technology" | "chief-marketing" | "chief-human-resources" | "chief-design" | "chief-data" | "chief-product" | "chief-customer" | "chief-revenue" | "chief-sales" | "president" | "vice-president" | "vp-operations" | "vp-finance" | "vp-technology" | "vp-marketing" | "vp-sales" | "vp-human-resources" | "vp-product" | "vp-design" | "vp-customer-support" | "vp-business-development" | "head-operations" | "head-finance" | "head-technology" | "head-marketing" | "head-human-resources" | "head-product" | "head-design" | "head-customer-support" | "head-business-development" | "lead-operations" | "lead-finance" | "lead-technology" | "lead-marketing" | "lead-human-resources" | "lead-product" | "lead-design" | "lead-customer-support" | "lead-business-development" | "chief-mobility-officer" | "evp-business-and-legal-affairs" | "global-general-manager" | "evp-international-co-productions" | "chief-creative-officer" | "executive-chairman" | "chief-experience-n-strategy-officer" | "chief-corporate-officer" | "chief-of-staff" | "chief-people-officer" | "chief-privacy-officer" | "chief-legal-officer" | "svp-people-operations-n-experience" | "svp-marketing" | "svp-product-n-analytics" | "evp-strategic-partnerships" | "svp-of-sales" | "svp-strategic-initiatives" | "head-of-talent" | "head-of-partnerships" | "engineering-manager" | "director-of-customer-success" | "chief-compliance-officer" | "chief-strategy-officer" | "general-counsel" | "vp-engineering" | "director-of-engineering" | "chief-engineer" | "chief-medical-officer" | "executive-editor" | "managing-editor" | "vp-strategy-and-transformation" | "chief-business-officer" | "advisor" | "other"), positions? (("chief-executive" | "chief-operating" | "chief-financial" | "chief-information" | "chief-technology" | "chief-marketing" | "chief-human-resources" | "chief-design" | "chief-data" | "chief-product" | "chief-customer" | "chief-revenue" | "chief-sales" | "president" | "vice-president" | "vp-operations" | "vp-finance" | "vp-technology" | "vp-marketing" | "vp-sales" | "vp-human-resources" | "vp-product" | "vp-design" | "vp-customer-support" | "vp-business-development" | "head-operations" | "head-finance" | "head-technology" | "head-marketing" | "head-human-resources" | "head-product" | "head-design" | "head-customer-support" | "head-business-development" | "lead-operations" | "lead-finance" | "lead-technology" | "lead-marketing" | "lead-human-resources" | "lead-product" | "lead-design" | "lead-customer-support" | "lead-business-development" | "chief-mobility-officer" | "evp-business-and-legal-affairs" | "global-general-manager" | "evp-international-co-productions" | "chief-creative-officer" | "executive-chairman" | "chief-experience-n-strategy-officer" | "chief-corporate-officer" | "chief-of-staff" | "chief-people-officer" | "chief-privacy-officer" | "chief-legal-officer" | "svp-people-operations-n-experience" | "svp-marketing" | "svp-product-n-analytics" | "evp-strategic-partnerships" | "svp-of-sales" | "svp-strategic-initiatives" | "head-of-talent" | "head-of-partnerships" | "engineering-manager" | "director-of-customer-success" | "chief-compliance-officer" | "chief-strategy-officer" | "general-counsel" | "vp-engineering" | "director-of-engineering" | "chief-engineer" | "chief-medical-officer" | "executive-editor" | "managing-editor" | "vp-strategy-and-transformation" | "chief-business-officer" | "advisor" | "other")[]), companyIds? (number[]), companyGroupIds? (number[]), companyNameSearch? (string[]), nameSearch? (string[]), rolesInCompany? (("founder-cofounder" | "management" | "board-member" | "board-chairman")[])
+   * Returns: ProfilesListResponse
+   */
+  list(query?: ProfilesListQuery, init?: RequestOptions): Promise<ProfilesListResponse>
+  /**
+   * Create a founder, management or board profile
+   * Creates a directory profile for a company. Requires name, companyId and at least one role or position. Optional fields default to null, including firstTimeFounder. Non-null firstTimeFounder requires the founder role. Uses profiles.getConfig option values. Managed-company and connected-company editing permissions apply.
+   * Parameters: body: ProfilesCreateBody
+   * Returns: ProfilesCreateResponse
+   */
+  create(body: ProfilesCreateBody, init?: RequestOptions): Promise<ProfilesCreateResponse>
+  /**
+   * Get a full directory profile
+   * Requires the profile UUID and companyId from a directory entry. Returns all fields in that company context without disclosing other company associations.
+   * Parameters: path: id (string); query: companyId (number)
+   * Returns: ProfilesGetOneResponse
+   */
+  getOne(id: string, query?: ProfilesGetOneQuery, init?: RequestOptions): Promise<ProfilesGetOneResponse>
+  /**
+   * Partially update a directory profile
+   * PATCH semantics: omitted fields are preserved; null clears optional scalar fields, position or firstTimeFounder. Name cannot be cleared. rolesInCompany replaces only the specified company roles; other role fields are preserved when omitted. Removing founder status clears its first-time answer. At least one role or position must remain. companyId must be an existing association. Updates are atomic. Requires edit access to every company association because personal fields are shared.
+   * Parameters: path: id (string); body: ProfilesUpdateBody
+   * Returns: ProfilesUpdateResponse
+   */
+  update(id: string, body: ProfilesUpdateBody, init?: RequestOptions): Promise<ProfilesUpdateResponse>
+  /**
+   * Delete a directory profile
+   * Permanently deletes the profile and all company role associations. Requires companyId matching the directory entry and delete permission for every associated company. Does not delete a platform user account.
+   * Parameters: path: id (string); query: companyId (number)
+   * Returns: ProfilesDeleteResponse
+   */
+  delete(id: string, query?: ProfilesDeleteQuery, init?: RequestOptions): Promise<ProfilesDeleteResponse>
+  /**
+   * Prepare a profile avatar upload
+   * Returns a short-lived, single-use PUT URL for an existing profile. Accepts JPEG, PNG or WebP, up to 5 MiB and 16 megapixels. The host or client must send the exact raw image bytes to uploadUrl with the returned headers; do not send base64, multipart or JSON, and never forward the Rundit API key. This tool does not read chat attachments or local paths. After uploading, call profiles.completeAvatarUpload with fileUuid. Requires edit access to every company associated with the profile. If the upload is explicitly blocked by the client network policy, explain the restriction and ask the user or their administrator to allowlist the exact hostname from uploadUrl, not a wildcard covering all storage domains. Once access is granted, prepare a fresh upload URL and retry. If policy cannot be changed, suggest uploading through the Rundit UI. Do not assume other upload failures are network restrictions: expired signatures, invalid headers and permission errors require separate diagnosis.
+   * Parameters: path: id (string); body: ProfilesPrepareAvatarUploadBody
+   * Returns: ProfilesPrepareAvatarUploadResponse
+   */
+  prepareAvatarUpload(id: string, body: ProfilesPrepareAvatarUploadBody, init?: RequestOptions): Promise<ProfilesPrepareAvatarUploadResponse>
+  /**
+   * Complete and attach a profile avatar upload
+   * Call after sending raw image bytes to the URL returned by prepareAvatarUpload. Verifies upload ownership, actual size and image contents, then atomically attaches it and replaces the previous avatar. Requires the same uploading user, matching profile/company, and edit access to every associated company. Retrying the currently attached upload is safe. A failed completion preserves the existing avatar. Returns the updated profile and avatarImageUrl. Remove an avatar through profiles.update with avatarImageFileUuid: null.
+   * Parameters: path: id (string); body: ProfilesCompleteAvatarUploadBody
+   * Returns: ProfilesCompleteAvatarUploadResponse
+   */
+  completeAvatarUpload(id: string, body: ProfilesCompleteAvatarUploadBody, init?: RequestOptions): Promise<ProfilesCompleteAvatarUploadResponse>
 }
 
 export interface CompaniesNamespace {
@@ -1603,6 +1865,7 @@ export interface CompanyReportsNamespace {
 }
 
 export interface RunditClient {
+  profiles: ProfilesNamespace
   companies: CompaniesNamespace
   companyGroups: CompanyGroupsNamespace
   positions: PositionsNamespace
@@ -1615,6 +1878,16 @@ export interface RunditClient {
 export declare function createClient(options: CreateClientOptions): RunditClient
 
 export declare const routeManifest: {
+  profiles: {
+    getConfig: { method: "GET"; path: "/profiles/config"; summary: "Get allowed profile field values and labels"; description: "Reference data for directory CRUD: roles, positions, education levels, genders, races and nationalities. Use sections to request only what you need (e.g. [\"roles\",\"positions\"]); omitted or [] returns the complete config. Contains no customer profiles. Use the option value, not its label, when writing."; exampleCall: "client.profiles.getConfig({ sections: ['example'] })"; responseType: "ProfilesGetConfigResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    list: { method: "GET"; path: "/profiles"; summary: "List the founders, management and board directory"; description: "Returns full profile fields for accessible companies, one entry per profile and company. Filter by company ids, funds, company name, person name, recorded roles, firstTimeFounder, position or positions (OR within the array). Filters intersect. firstTimeFounder=false matches recorded No answers only, not unknown answers or non-founders. Omitted roles returns the whole directory. Absence of a role means not recorded, not a verified negative. First-time-founder null means Not specified. Ordered by company id then profile UUID; repeat the original filters when passing the next cursor. Existing legacy free-text values remain readable; format validation applies to supplied write fields."; exampleCall: "client.profiles.list({ limit: 123 })"; responseType: "ProfilesListResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    create: { method: "POST"; path: "/profiles"; summary: "Create a founder, management or board profile"; description: "Creates a directory profile for a company. Requires name, companyId and at least one role or position. Optional fields default to null, including firstTimeFounder. Non-null firstTimeFounder requires the founder role. Uses profiles.getConfig option values. Managed-company and connected-company editing permissions apply."; exampleCall: "client.profiles.create({ companyId: 123, name: 'example' })"; responseType: "ProfilesCreateResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    getOne: { method: "GET"; path: "/profiles/:id"; summary: "Get a full directory profile"; description: "Requires the profile UUID and companyId from a directory entry. Returns all fields in that company context without disclosing other company associations."; exampleCall: "client.profiles.getOne('123', { companyId: 123 })"; responseType: "ProfilesGetOneResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    update: { method: "PATCH"; path: "/profiles/:id"; summary: "Partially update a directory profile"; description: "PATCH semantics: omitted fields are preserved; null clears optional scalar fields, position or firstTimeFounder. Name cannot be cleared. rolesInCompany replaces only the specified company roles; other role fields are preserved when omitted. Removing founder status clears its first-time answer. At least one role or position must remain. companyId must be an existing association. Updates are atomic. Requires edit access to every company association because personal fields are shared."; exampleCall: "client.profiles.update('123', { companyId: 123 })"; responseType: "ProfilesUpdateResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    delete: { method: "DELETE"; path: "/profiles/:id"; summary: "Delete a directory profile"; description: "Permanently deletes the profile and all company role associations. Requires companyId matching the directory entry and delete permission for every associated company. Does not delete a platform user account."; exampleCall: "client.profiles.delete('123', { companyId: 123 })"; responseType: "ProfilesDeleteResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    prepareAvatarUpload: { method: "POST"; path: "/profiles/:id/avatar/uploads"; summary: "Prepare a profile avatar upload"; description: "Returns a short-lived, single-use PUT URL for an existing profile. Accepts JPEG, PNG or WebP, up to 5 MiB and 16 megapixels. The host or client must send the exact raw image bytes to uploadUrl with the returned headers; do not send base64, multipart or JSON, and never forward the Rundit API key. This tool does not read chat attachments or local paths. After uploading, call profiles.completeAvatarUpload with fileUuid. Requires edit access to every company associated with the profile. If the upload is explicitly blocked by the client network policy, explain the restriction and ask the user or their administrator to allowlist the exact hostname from uploadUrl, not a wildcard covering all storage domains. Once access is granted, prepare a fresh upload URL and retry. If policy cannot be changed, suggest uploading through the Rundit UI. Do not assume other upload failures are network restrictions: expired signatures, invalid headers and permission errors require separate diagnosis."; exampleCall: "client.profiles.prepareAvatarUpload('123', { companyId: 123, filename: 'example', filetype: \"image/jpeg\", filesize: 123 })"; responseType: "ProfilesPrepareAvatarUploadResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+    completeAvatarUpload: { method: "POST"; path: "/profiles/:id/avatar/uploads/complete"; summary: "Complete and attach a profile avatar upload"; description: "Call after sending raw image bytes to the URL returned by prepareAvatarUpload. Verifies upload ownership, actual size and image contents, then atomically attaches it and replaces the previous avatar. Requires the same uploading user, matching profile/company, and edit access to every associated company. Retrying the currently attached upload is safe. A failed completion preserves the existing avatar. Returns the updated profile and avatarImageUrl. Remove an avatar through profiles.update with avatarImageFileUuid: null."; exampleCall: "client.profiles.completeAvatarUpload('123', { companyId: 123, fileUuid: '123' })"; responseType: "ProfilesCompleteAvatarUploadResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
+  }
   companies: {
     getDashboards: { method: "POST"; path: "/companies/dashboards"; summary: "PREFERRED tool for multi-company analysis — full dashboards for many companies in one call"; description: "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` (case-insensitive exact match on full name or `shortName`) to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `metricsPointLimit` keeps only the most recent N points per metric (`1` = latest dated point; set `metricsTo` to today to exclude future values) — full histories for many companies add up quickly. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively). Dashboards come back in the order the `companyIds` were requested, so `limit`/`cursor` paging is stable."; exampleCall: "client.companies.getDashboards({ companyIds: [123], currency: 'USD' })"; responseType: "CompaniesGetDashboardsResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }
     getDashboard: { method: "GET"; path: "/companies/:id/dashboard"; summary: "Get full company dashboard for ONE company"; description: "Returns company metadata, positions per fund, metrics with data points, recent transactions, and report summaries for a single company. For more than one company, prefer POST /companies/dashboards (`companies.getDashboards`) instead — it returns the same payload per company in one call and avoids the N+1 pattern. Takes the same metric options as the batch route: `metricTypeNames` / `metricTypeIds` scope which metrics are included, `metricsTimeframe` picks a granularity, `metricsFrom`, `metricsTo`, and `metricsPointLimit` limit history (`metricsPointLimit: 1` = latest dated point; set `metricsTo` to today for current values — prefer it over `metricsFrom` for \"latest\" reads, since a date lower bound hides values last reported before it). `transactionLimit` and `reportLimit` cap list sizes."; exampleCall: "client.companies.getDashboard(123, { currency: 'USD' })"; responseType: "CompaniesGetDashboardResponse"; pathParams: { name: string; type: string; description: string | null }[]; queryParams: { name: string; type: string; required: boolean; description: string | null }[] }

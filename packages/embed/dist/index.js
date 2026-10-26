@@ -1,4 +1,117 @@
 const routeManifest = {
+  "profiles": {
+    "getConfig": {
+      "method": "GET",
+      "path": "/profiles/config",
+      "summary": "Get allowed profile field values and labels",
+      "description": "Reference data for directory CRUD: roles, positions, education levels, genders, races and nationalities. Use sections to request only what you need (e.g. [\"roles\",\"positions\"]); omitted or [] returns the complete config. Contains no customer profiles. Use the option value, not its label, when writing.",
+      "exampleCall": "client.profiles.getConfig({ sections: ['example'] })",
+      "responseType": "ProfilesGetConfigResponse",
+      "pathParams": [],
+      "queryParams": [
+        {
+          "name": "sections",
+          "required": false,
+          "type": "(\"roles\" | \"positions\" | \"educationLevels\" | \"genders\" | \"races\" | \"nationalities\")[]",
+          "description": "Return only these reference-data sections. Omit or pass [] for the complete config."
+        }
+      ]
+    },
+    "list": {
+      "method": "GET",
+      "path": "/profiles",
+      "summary": "List the founders, management and board directory",
+      "description": "Returns full profile fields for accessible companies, one entry per profile and company. Filter by company ids, funds, company name, person name, recorded roles, firstTimeFounder, position or positions (OR within the array). Filters intersect. firstTimeFounder=false matches recorded No answers only, not unknown answers or non-founders. Omitted roles returns the whole directory. Absence of a role means not recorded, not a verified negative. First-time-founder null means Not specified. Ordered by company id then profile UUID; repeat the original filters when passing the next cursor. Existing legacy free-text values remain readable; format validation applies to supplied write fields.",
+      "exampleCall": "client.profiles.list({ limit: 123 })",
+      "responseType": "ProfilesListResponse",
+      "pathParams": [],
+      "queryParams": [
+        {
+          "name": "limit",
+          "required": false,
+          "type": "number",
+          "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested."
+        },
+        {
+          "name": "cursor",
+          "required": false,
+          "type": "string",
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+        },
+        {
+          "name": "firstTimeFounder",
+          "required": false,
+          "type": "boolean",
+          "description": "Filter founders by a recorded Yes/No answer. false does not match unknown answers or non-founders."
+        },
+        {
+          "name": "position",
+          "required": false,
+          "type": "\"chief-executive\" | \"chief-operating\" | \"chief-financial\" | \"chief-information\" | \"chief-technology\" | \"chief-marketing\" | \"chief-human-resources\" | \"chief-design\" | \"chief-data\" | \"chief-product\" | \"chief-customer\" | \"chief-revenue\" | \"chief-sales\" | \"president\" | \"vice-president\" | \"vp-operations\" | \"vp-finance\" | \"vp-technology\" | \"vp-marketing\" | \"vp-sales\" | \"vp-human-resources\" | \"vp-product\" | \"vp-design\" | \"vp-customer-support\" | \"vp-business-development\" | \"head-operations\" | \"head-finance\" | \"head-technology\" | \"head-marketing\" | \"head-human-resources\" | \"head-product\" | \"head-design\" | \"head-customer-support\" | \"head-business-development\" | \"lead-operations\" | \"lead-finance\" | \"lead-technology\" | \"lead-marketing\" | \"lead-human-resources\" | \"lead-product\" | \"lead-design\" | \"lead-customer-support\" | \"lead-business-development\" | \"chief-mobility-officer\" | \"evp-business-and-legal-affairs\" | \"global-general-manager\" | \"evp-international-co-productions\" | \"chief-creative-officer\" | \"executive-chairman\" | \"chief-experience-n-strategy-officer\" | \"chief-corporate-officer\" | \"chief-of-staff\" | \"chief-people-officer\" | \"chief-privacy-officer\" | \"chief-legal-officer\" | \"svp-people-operations-n-experience\" | \"svp-marketing\" | \"svp-product-n-analytics\" | \"evp-strategic-partnerships\" | \"svp-of-sales\" | \"svp-strategic-initiatives\" | \"head-of-talent\" | \"head-of-partnerships\" | \"engineering-manager\" | \"director-of-customer-success\" | \"chief-compliance-officer\" | \"chief-strategy-officer\" | \"general-counsel\" | \"vp-engineering\" | \"director-of-engineering\" | \"chief-engineer\" | \"chief-medical-officer\" | \"executive-editor\" | \"managing-editor\" | \"vp-strategy-and-transformation\" | \"chief-business-officer\" | \"advisor\" | \"other\"",
+          "description": "Filter by a company position from profiles.getConfig."
+        },
+        {
+          "name": "positions",
+          "required": false,
+          "type": "(\"chief-executive\" | \"chief-operating\" | \"chief-financial\" | \"chief-information\" | \"chief-technology\" | \"chief-marketing\" | \"chief-human-resources\" | \"chief-design\" | \"chief-data\" | \"chief-product\" | \"chief-customer\" | \"chief-revenue\" | \"chief-sales\" | \"president\" | \"vice-president\" | \"vp-operations\" | \"vp-finance\" | \"vp-technology\" | \"vp-marketing\" | \"vp-sales\" | \"vp-human-resources\" | \"vp-product\" | \"vp-design\" | \"vp-customer-support\" | \"vp-business-development\" | \"head-operations\" | \"head-finance\" | \"head-technology\" | \"head-marketing\" | \"head-human-resources\" | \"head-product\" | \"head-design\" | \"head-customer-support\" | \"head-business-development\" | \"lead-operations\" | \"lead-finance\" | \"lead-technology\" | \"lead-marketing\" | \"lead-human-resources\" | \"lead-product\" | \"lead-design\" | \"lead-customer-support\" | \"lead-business-development\" | \"chief-mobility-officer\" | \"evp-business-and-legal-affairs\" | \"global-general-manager\" | \"evp-international-co-productions\" | \"chief-creative-officer\" | \"executive-chairman\" | \"chief-experience-n-strategy-officer\" | \"chief-corporate-officer\" | \"chief-of-staff\" | \"chief-people-officer\" | \"chief-privacy-officer\" | \"chief-legal-officer\" | \"svp-people-operations-n-experience\" | \"svp-marketing\" | \"svp-product-n-analytics\" | \"evp-strategic-partnerships\" | \"svp-of-sales\" | \"svp-strategic-initiatives\" | \"head-of-talent\" | \"head-of-partnerships\" | \"engineering-manager\" | \"director-of-customer-success\" | \"chief-compliance-officer\" | \"chief-strategy-officer\" | \"general-counsel\" | \"vp-engineering\" | \"director-of-engineering\" | \"chief-engineer\" | \"chief-medical-officer\" | \"executive-editor\" | \"managing-editor\" | \"vp-strategy-and-transformation\" | \"chief-business-officer\" | \"advisor\" | \"other\")[]",
+          "description": "Match any of these positions (OR). Intersects with other filters, including scalar position when supplied."
+        },
+        {
+          "name": "companyIds",
+          "required": false,
+          "type": "number[]",
+          "description": null
+        },
+        {
+          "name": "companyGroupIds",
+          "required": false,
+          "type": "number[]",
+          "description": "Restrict to companies in these funds"
+        },
+        {
+          "name": "companyNameSearch",
+          "required": false,
+          "type": "string[]",
+          "description": "Case-insensitive company name substrings (OR)"
+        },
+        {
+          "name": "nameSearch",
+          "required": false,
+          "type": "string[]",
+          "description": "Case-insensitive person full-name substrings (OR)"
+        },
+        {
+          "name": "rolesInCompany",
+          "required": false,
+          "type": "(\"founder-cofounder\" | \"management\" | \"board-member\" | \"board-chairman\")[]",
+          "description": "Match any of these recorded roles; omitted returns the whole directory"
+        }
+      ]
+    },
+    "getOne": {
+      "method": "GET",
+      "path": "/profiles/:id",
+      "summary": "Get a full directory profile",
+      "description": "Requires the profile UUID and companyId from a directory entry. Returns all fields in that company context without disclosing other company associations.",
+      "exampleCall": "client.profiles.getOne('123', { companyId: 123 })",
+      "responseType": "ProfilesGetOneResponse",
+      "pathParams": [
+        {
+          "name": "id",
+          "type": "string",
+          "description": null
+        }
+      ],
+      "queryParams": [
+        {
+          "name": "companyId",
+          "required": true,
+          "type": "number",
+          "description": "Company context for this directory entry. Must match an existing association; profiles cannot be moved to another company."
+        }
+      ]
+    }
+  },
   "companies": {
     "getDashboards": {
       "method": "POST",
@@ -122,7 +235,7 @@ const routeManifest = {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyIds",
@@ -165,7 +278,7 @@ const routeManifest = {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -218,7 +331,7 @@ const routeManifest = {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "groupBy",
@@ -301,7 +414,7 @@ const routeManifest = {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -379,7 +492,7 @@ const routeManifest = {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -444,7 +557,7 @@ const routeManifest = {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -485,7 +598,7 @@ const routeManifest = {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "companyGroupIds",
@@ -534,7 +647,7 @@ const routeManifest = {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "origin",
@@ -601,7 +714,7 @@ const routeManifest = {
           "name": "cursor",
           "required": false,
           "type": "string",
-          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+          "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
         },
         {
           "name": "sortBy",
@@ -787,6 +900,14 @@ function createRequester(options) {
   }
 }
 
+function createProfilesNamespace(request) {
+  return {
+    getConfig: (query = {}, init = {}) => request({ method: "GET", path: "/profiles/config", pathParams: undefined, query: query, body: undefined, signal: init.signal }),
+    list: (query = {}, init = {}) => request({ method: "GET", path: "/profiles", pathParams: undefined, query: query, body: undefined, signal: init.signal }),
+    getOne: (id, query = {}, init = {}) => request({ method: "GET", path: "/profiles/:id", pathParams: { id }, query: query, body: undefined, signal: init.signal }),
+  }
+}
+
 function createCompaniesNamespace(request) {
   return {
     getDashboards: (body, init = {}) => request({ method: "POST", path: "/companies/dashboards", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
@@ -847,6 +968,7 @@ export function createEmbedClient(options) {
   const request = createRequester(options)
 
   return {
+    profiles: createProfilesNamespace(request),
     companies: createCompaniesNamespace(request),
     companyGroups: createCompanyGroupsNamespace(request),
     positions: createPositionsNamespace(request),

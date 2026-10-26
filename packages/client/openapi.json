@@ -1,6 +1,768 @@
 {
   "openapi": "3.0.0",
   "paths": {
+    "/api/v2/sdk/profiles/config": {
+      "get": {
+        "description": "Reference data for directory CRUD: roles, positions, education levels, genders, races and nationalities. Use sections to request only what you need (e.g. [\"roles\",\"positions\"]); omitted or [] returns the complete config. Contains no customer profiles. Use the option value, not its label, when writing.",
+        "operationId": "profiles.getConfig",
+        "parameters": [
+          {
+            "name": "sections",
+            "required": false,
+            "in": "query",
+            "description": "Return only these reference-data sections. Omit or pass [] for the complete config.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "roles",
+                  "positions",
+                  "educationLevels",
+                  "genders",
+                  "races",
+                  "nationalities"
+                ]
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkProfilesConfigDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get allowed profile field values and labels",
+        "tags": [
+          "sdk-profiles"
+        ],
+        "x-api-key-scopes": [
+          "profiles:read"
+        ],
+        "x-sdk-audiences": [
+          "client",
+          "embed"
+        ],
+        "x-sdk-namespace": "profiles",
+        "x-sdk-operation": "getConfig"
+      }
+    },
+    "/api/v2/sdk/profiles": {
+      "get": {
+        "description": "Returns full profile fields for accessible companies, one entry per profile and company. Filter by company ids, funds, company name, person name, recorded roles, firstTimeFounder, position or positions (OR within the array). Filters intersect. firstTimeFounder=false matches recorded No answers only, not unknown answers or non-founders. Omitted roles returns the whole directory. Absence of a role means not recorded, not a verified negative. First-time-founder null means Not specified. Ordered by company id then profile UUID; repeat the original filters when passing the next cursor. Existing legacy free-text values remain readable; format validation applies to supplied write fields.",
+        "operationId": "profiles.list",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "Maximum items per page (1-500). Omit to receive the full result set in one response. Values outside that range are rejected with 422 rather than clamped, so a page is never quietly smaller than requested.",
+            "schema": {
+              "minimum": 1,
+              "maximum": 500,
+              "type": "number"
+            }
+          },
+          {
+            "name": "cursor",
+            "required": false,
+            "in": "query",
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "firstTimeFounder",
+            "required": false,
+            "in": "query",
+            "description": "Filter founders by a recorded Yes/No answer. false does not match unknown answers or non-founders.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "position",
+            "required": false,
+            "in": "query",
+            "description": "Filter by a company position from profiles.getConfig.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "chief-executive",
+                "chief-operating",
+                "chief-financial",
+                "chief-information",
+                "chief-technology",
+                "chief-marketing",
+                "chief-human-resources",
+                "chief-design",
+                "chief-data",
+                "chief-product",
+                "chief-customer",
+                "chief-revenue",
+                "chief-sales",
+                "president",
+                "vice-president",
+                "vp-operations",
+                "vp-finance",
+                "vp-technology",
+                "vp-marketing",
+                "vp-sales",
+                "vp-human-resources",
+                "vp-product",
+                "vp-design",
+                "vp-customer-support",
+                "vp-business-development",
+                "head-operations",
+                "head-finance",
+                "head-technology",
+                "head-marketing",
+                "head-human-resources",
+                "head-product",
+                "head-design",
+                "head-customer-support",
+                "head-business-development",
+                "lead-operations",
+                "lead-finance",
+                "lead-technology",
+                "lead-marketing",
+                "lead-human-resources",
+                "lead-product",
+                "lead-design",
+                "lead-customer-support",
+                "lead-business-development",
+                "chief-mobility-officer",
+                "evp-business-and-legal-affairs",
+                "global-general-manager",
+                "evp-international-co-productions",
+                "chief-creative-officer",
+                "executive-chairman",
+                "chief-experience-n-strategy-officer",
+                "chief-corporate-officer",
+                "chief-of-staff",
+                "chief-people-officer",
+                "chief-privacy-officer",
+                "chief-legal-officer",
+                "svp-people-operations-n-experience",
+                "svp-marketing",
+                "svp-product-n-analytics",
+                "evp-strategic-partnerships",
+                "svp-of-sales",
+                "svp-strategic-initiatives",
+                "head-of-talent",
+                "head-of-partnerships",
+                "engineering-manager",
+                "director-of-customer-success",
+                "chief-compliance-officer",
+                "chief-strategy-officer",
+                "general-counsel",
+                "vp-engineering",
+                "director-of-engineering",
+                "chief-engineer",
+                "chief-medical-officer",
+                "executive-editor",
+                "managing-editor",
+                "vp-strategy-and-transformation",
+                "chief-business-officer",
+                "advisor",
+                "other"
+              ]
+            }
+          },
+          {
+            "name": "positions",
+            "required": false,
+            "in": "query",
+            "description": "Match any of these positions (OR). Intersects with other filters, including scalar position when supplied.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "chief-executive",
+                  "chief-operating",
+                  "chief-financial",
+                  "chief-information",
+                  "chief-technology",
+                  "chief-marketing",
+                  "chief-human-resources",
+                  "chief-design",
+                  "chief-data",
+                  "chief-product",
+                  "chief-customer",
+                  "chief-revenue",
+                  "chief-sales",
+                  "president",
+                  "vice-president",
+                  "vp-operations",
+                  "vp-finance",
+                  "vp-technology",
+                  "vp-marketing",
+                  "vp-sales",
+                  "vp-human-resources",
+                  "vp-product",
+                  "vp-design",
+                  "vp-customer-support",
+                  "vp-business-development",
+                  "head-operations",
+                  "head-finance",
+                  "head-technology",
+                  "head-marketing",
+                  "head-human-resources",
+                  "head-product",
+                  "head-design",
+                  "head-customer-support",
+                  "head-business-development",
+                  "lead-operations",
+                  "lead-finance",
+                  "lead-technology",
+                  "lead-marketing",
+                  "lead-human-resources",
+                  "lead-product",
+                  "lead-design",
+                  "lead-customer-support",
+                  "lead-business-development",
+                  "chief-mobility-officer",
+                  "evp-business-and-legal-affairs",
+                  "global-general-manager",
+                  "evp-international-co-productions",
+                  "chief-creative-officer",
+                  "executive-chairman",
+                  "chief-experience-n-strategy-officer",
+                  "chief-corporate-officer",
+                  "chief-of-staff",
+                  "chief-people-officer",
+                  "chief-privacy-officer",
+                  "chief-legal-officer",
+                  "svp-people-operations-n-experience",
+                  "svp-marketing",
+                  "svp-product-n-analytics",
+                  "evp-strategic-partnerships",
+                  "svp-of-sales",
+                  "svp-strategic-initiatives",
+                  "head-of-talent",
+                  "head-of-partnerships",
+                  "engineering-manager",
+                  "director-of-customer-success",
+                  "chief-compliance-officer",
+                  "chief-strategy-officer",
+                  "general-counsel",
+                  "vp-engineering",
+                  "director-of-engineering",
+                  "chief-engineer",
+                  "chief-medical-officer",
+                  "executive-editor",
+                  "managing-editor",
+                  "vp-strategy-and-transformation",
+                  "chief-business-officer",
+                  "advisor",
+                  "other"
+                ]
+              }
+            }
+          },
+          {
+            "name": "companyIds",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "companyGroupIds",
+            "required": false,
+            "in": "query",
+            "description": "Restrict to companies in these funds",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "name": "companyNameSearch",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive company name substrings (OR)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "nameSearch",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive person full-name substrings (OR)",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "rolesInCompany",
+            "required": false,
+            "in": "query",
+            "description": "Match any of these recorded roles; omitted returns the whole directory",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "founder-cofounder",
+                  "management",
+                  "board-member",
+                  "board-chairman"
+                ]
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkProfilesListResponseDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "List the founders, management and board directory",
+        "tags": [
+          "sdk-profiles"
+        ],
+        "x-api-key-scopes": [
+          "profiles:read"
+        ],
+        "x-sdk-audiences": [
+          "client",
+          "embed"
+        ],
+        "x-sdk-namespace": "profiles",
+        "x-sdk-operation": "list"
+      },
+      "post": {
+        "description": "Creates a directory profile for a company. Requires name, companyId and at least one role or position. Optional fields default to null, including firstTimeFounder. Non-null firstTimeFounder requires the founder role. Uses profiles.getConfig option values. Managed-company and connected-company editing permissions apply.",
+        "operationId": "profiles.create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SdkCreateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkProfileDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Create a founder, management or board profile",
+        "tags": [
+          "sdk-profiles"
+        ],
+        "x-api-key-scopes": [
+          "profiles:write"
+        ],
+        "x-mcp-annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false
+        },
+        "x-sdk-audiences": [
+          "client"
+        ],
+        "x-sdk-namespace": "profiles",
+        "x-sdk-operation": "create"
+      }
+    },
+    "/api/v2/sdk/profiles/{id}": {
+      "get": {
+        "description": "Requires the profile UUID and companyId from a directory entry. Returns all fields in that company context without disclosing other company associations.",
+        "operationId": "profiles.getOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "query",
+            "description": "Company context for this directory entry. Must match an existing association; profiles cannot be moved to another company.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkProfileDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-embed-token": []
+          },
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Get a full directory profile",
+        "tags": [
+          "sdk-profiles"
+        ],
+        "x-api-key-scopes": [
+          "profiles:read"
+        ],
+        "x-sdk-audiences": [
+          "client",
+          "embed"
+        ],
+        "x-sdk-namespace": "profiles",
+        "x-sdk-operation": "getOne"
+      },
+      "patch": {
+        "description": "PATCH semantics: omitted fields are preserved; null clears optional scalar fields, position or firstTimeFounder. Name cannot be cleared. rolesInCompany replaces only the specified company roles; other role fields are preserved when omitted. Removing founder status clears its first-time answer. At least one role or position must remain. companyId must be an existing association. Updates are atomic. Requires edit access to every company association because personal fields are shared.",
+        "operationId": "profiles.update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SdkUpdateProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkProfileDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Partially update a directory profile",
+        "tags": [
+          "sdk-profiles"
+        ],
+        "x-api-key-scopes": [
+          "profiles:write"
+        ],
+        "x-mcp-annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true
+        },
+        "x-sdk-audiences": [
+          "client"
+        ],
+        "x-sdk-namespace": "profiles",
+        "x-sdk-operation": "update"
+      },
+      "delete": {
+        "description": "Permanently deletes the profile and all company role associations. Requires companyId matching the directory entry and delete permission for every associated company. Does not delete a platform user account.",
+        "operationId": "profiles.delete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "companyId",
+            "required": true,
+            "in": "query",
+            "description": "Company context for this directory entry. Must match an existing association; profiles cannot be moved to another company.",
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Delete a directory profile",
+        "tags": [
+          "sdk-profiles"
+        ],
+        "x-api-key-scopes": [
+          "profiles:write"
+        ],
+        "x-mcp-annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true
+        },
+        "x-sdk-audiences": [
+          "client"
+        ],
+        "x-sdk-namespace": "profiles",
+        "x-sdk-operation": "delete"
+      }
+    },
+    "/api/v2/sdk/profiles/{id}/avatar/uploads": {
+      "post": {
+        "description": "Returns a short-lived, single-use PUT URL for an existing profile. Accepts JPEG, PNG or WebP, up to 5 MiB and 16 megapixels. The host or client must send the exact raw image bytes to uploadUrl with the returned headers; do not send base64, multipart or JSON, and never forward the Rundit API key. This tool does not read chat attachments or local paths. After uploading, call profiles.completeAvatarUpload with fileUuid. Requires edit access to every company associated with the profile. If the upload is explicitly blocked by the client network policy, explain the restriction and ask the user or their administrator to allowlist the exact hostname from uploadUrl, not a wildcard covering all storage domains. Once access is granted, prepare a fresh upload URL and retry. If policy cannot be changed, suggest uploading through the Rundit UI. Do not assume other upload failures are network restrictions: expired signatures, invalid headers and permission errors require separate diagnosis.",
+        "operationId": "profiles.prepareAvatarUpload",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SdkPrepareProfileAvatarUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkProfileAvatarUploadDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Prepare a profile avatar upload",
+        "tags": [
+          "sdk-profiles"
+        ],
+        "x-api-key-scopes": [
+          "profiles:write"
+        ],
+        "x-mcp-annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": false
+        },
+        "x-sdk-audiences": [
+          "client"
+        ],
+        "x-sdk-namespace": "profiles",
+        "x-sdk-operation": "prepareAvatarUpload"
+      }
+    },
+    "/api/v2/sdk/profiles/{id}/avatar/uploads/complete": {
+      "post": {
+        "description": "Call after sending raw image bytes to the URL returned by prepareAvatarUpload. Verifies upload ownership, actual size and image contents, then atomically attaches it and replaces the previous avatar. Requires the same uploading user, matching profile/company, and edit access to every associated company. Retrying the currently attached upload is safe. A failed completion preserves the existing avatar. Returns the updated profile and avatarImageUrl. Remove an avatar through profiles.update with avatarImageFileUuid: null.",
+        "operationId": "profiles.completeAvatarUpload",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SdkCompleteProfileAvatarUploadDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SdkProfileDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Missing or invalid SDK credentials"
+          },
+          "403": {
+            "description": "Insufficient user permissions or API key scopes"
+          }
+        },
+        "security": [
+          {
+            "sdk-client-api-key": []
+          }
+        ],
+        "summary": "Complete and attach a profile avatar upload",
+        "tags": [
+          "sdk-profiles"
+        ],
+        "x-api-key-scopes": [
+          "profiles:write"
+        ],
+        "x-mcp-annotations": {
+          "readOnlyHint": false,
+          "destructiveHint": true
+        },
+        "x-sdk-audiences": [
+          "client"
+        ],
+        "x-sdk-namespace": "profiles",
+        "x-sdk-operation": "completeAvatarUpload"
+      }
+    },
     "/api/v2/sdk/companies/dashboards": {
       "post": {
         "description": "PREFERRED tool for multi-company analysis. Returns full dashboards (company metadata, positions, metrics with data points, recent transactions, report summaries) for many companies in a single request, grouped per company. Use this instead of looping `GET /companies/:id/dashboard` (the N+1 pattern) whenever the agent needs to look at more than one company — it returns the same shape per company but in one round trip. Typical workflow: resolve company ids (e.g. `GET /companies?nameSearch=[\"acme\",\"beta\"]`), then call this with their `companyIds`. Use `metricTypeIds` or `metricTypeNames` (case-insensitive exact match on full name or `shortName`) to scope the returned metrics. `metricsFrom` (ISO 8601) sets a lower-bound date for metric data points; omit to include all history. `metricsTimeframe` restricts data point granularity to Month, Quarter, or Year. `metricsPointLimit` keeps only the most recent N points per metric (`1` = latest dated point; set `metricsTo` to today to exclude future values) — full histories for many companies add up quickly. `currency` (ISO 4217, required) FX-converts all monetary metrics across the batch. `conversionStrategy` controls which rate is applied: `LATEST_FX_RATE` (default) or `ENTITY_DATE_RATE` (the rate on each point's own date). `transactionLimit` / `reportLimit` cap list sizes per company (defaults: 10 and 5 respectively). Dashboards come back in the order the `companyIds` were requested, so `limit`/`cursor` paging is stable.",
@@ -305,7 +1067,7 @@
             "name": "cursor",
             "required": false,
             "in": "query",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
             "schema": {
               "type": "string"
             }
@@ -408,7 +1170,7 @@
             "name": "cursor",
             "required": false,
             "in": "query",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
             "schema": {
               "type": "string"
             }
@@ -555,7 +1317,7 @@
             "name": "cursor",
             "required": false,
             "in": "query",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
             "schema": {
               "type": "string"
             }
@@ -741,7 +1503,7 @@
             "name": "cursor",
             "required": false,
             "in": "query",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
             "schema": {
               "type": "string"
             }
@@ -927,7 +1689,7 @@
             "name": "cursor",
             "required": false,
             "in": "query",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
             "schema": {
               "type": "string"
             }
@@ -1068,7 +1830,7 @@
             "name": "cursor",
             "required": false,
             "in": "query",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
             "schema": {
               "type": "string"
             }
@@ -1190,7 +1952,7 @@
             "name": "cursor",
             "required": false,
             "in": "query",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
             "schema": {
               "type": "string"
             }
@@ -1324,7 +2086,7 @@
             "name": "cursor",
             "required": false,
             "in": "query",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
             "schema": {
               "type": "string"
             }
@@ -2242,7 +3004,7 @@
             "name": "cursor",
             "required": false,
             "in": "query",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions.",
             "schema": {
               "type": "string"
             }
@@ -2452,6 +3214,998 @@
       }
     },
     "schemas": {
+      "SdkProfileOptionDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ]
+      },
+      "SdkProfilesConfigDto": {
+        "type": "object",
+        "properties": {
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkProfileOptionDto"
+            }
+          },
+          "positions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkProfileOptionDto"
+            }
+          },
+          "educationLevels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkProfileOptionDto"
+            }
+          },
+          "genders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkProfileOptionDto"
+            }
+          },
+          "races": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkProfileOptionDto"
+            }
+          },
+          "nationalities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkProfileOptionDto"
+            }
+          }
+        }
+      },
+      "SdkCompanyReferenceDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "number",
+            "description": "Company identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Company display name"
+          },
+          "type": {
+            "type": "string",
+            "description": "Company type",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type"
+        ]
+      },
+      "SdkProfileDto": {
+        "type": "object",
+        "properties": {
+          "surname": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "telephone": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "avatarImageFileUuid": {
+            "type": "string",
+            "nullable": true
+          },
+          "expertiseAreas": {
+            "type": "string",
+            "nullable": true
+          },
+          "educationLevel": {
+            "type": "string",
+            "nullable": true
+          },
+          "linkedIn": {
+            "type": "string",
+            "nullable": true
+          },
+          "github": {
+            "type": "string",
+            "nullable": true
+          },
+          "website": {
+            "type": "string",
+            "nullable": true
+          },
+          "gender": {
+            "type": "string",
+            "nullable": true
+          },
+          "birthYear": {
+            "type": "integer",
+            "nullable": true
+          },
+          "race": {
+            "type": "string",
+            "nullable": true
+          },
+          "nationality": {
+            "type": "string",
+            "nullable": true
+          },
+          "ethnicity": {
+            "type": "string",
+            "nullable": true
+          },
+          "twitter": {
+            "type": "string",
+            "nullable": true
+          },
+          "facebook": {
+            "type": "string",
+            "nullable": true
+          },
+          "rolesInCompany": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "founder-cofounder",
+                "management",
+                "board-member",
+                "board-chairman"
+              ]
+            }
+          },
+          "firstTimeFounder": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "position": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "chief-executive",
+              "chief-operating",
+              "chief-financial",
+              "chief-information",
+              "chief-technology",
+              "chief-marketing",
+              "chief-human-resources",
+              "chief-design",
+              "chief-data",
+              "chief-product",
+              "chief-customer",
+              "chief-revenue",
+              "chief-sales",
+              "president",
+              "vice-president",
+              "vp-operations",
+              "vp-finance",
+              "vp-technology",
+              "vp-marketing",
+              "vp-sales",
+              "vp-human-resources",
+              "vp-product",
+              "vp-design",
+              "vp-customer-support",
+              "vp-business-development",
+              "head-operations",
+              "head-finance",
+              "head-technology",
+              "head-marketing",
+              "head-human-resources",
+              "head-product",
+              "head-design",
+              "head-customer-support",
+              "head-business-development",
+              "lead-operations",
+              "lead-finance",
+              "lead-technology",
+              "lead-marketing",
+              "lead-human-resources",
+              "lead-product",
+              "lead-design",
+              "lead-customer-support",
+              "lead-business-development",
+              "chief-mobility-officer",
+              "evp-business-and-legal-affairs",
+              "global-general-manager",
+              "evp-international-co-productions",
+              "chief-creative-officer",
+              "executive-chairman",
+              "chief-experience-n-strategy-officer",
+              "chief-corporate-officer",
+              "chief-of-staff",
+              "chief-people-officer",
+              "chief-privacy-officer",
+              "chief-legal-officer",
+              "svp-people-operations-n-experience",
+              "svp-marketing",
+              "svp-product-n-analytics",
+              "evp-strategic-partnerships",
+              "svp-of-sales",
+              "svp-strategic-initiatives",
+              "head-of-talent",
+              "head-of-partnerships",
+              "engineering-manager",
+              "director-of-customer-success",
+              "chief-compliance-officer",
+              "chief-strategy-officer",
+              "general-counsel",
+              "vp-engineering",
+              "director-of-engineering",
+              "chief-engineer",
+              "chief-medical-officer",
+              "executive-editor",
+              "managing-editor",
+              "vp-strategy-and-transformation",
+              "chief-business-officer",
+              "advisor",
+              "other"
+            ],
+            "description": "Company position"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "description": "Given name; legacy records may have no name"
+          },
+          "companyId": {
+            "type": "number"
+          },
+          "company": {
+            "$ref": "#/components/schemas/SdkCompanyReferenceDto"
+          },
+          "avatarImageUrl": {
+            "type": "string",
+            "nullable": true,
+            "description": "Directly usable 128×128 avatar image URL; w/h query parameters may be adjusted"
+          }
+        },
+        "required": [
+          "surname",
+          "email",
+          "telephone",
+          "country",
+          "avatarImageFileUuid",
+          "expertiseAreas",
+          "educationLevel",
+          "linkedIn",
+          "github",
+          "website",
+          "gender",
+          "birthYear",
+          "race",
+          "nationality",
+          "ethnicity",
+          "twitter",
+          "facebook",
+          "rolesInCompany",
+          "firstTimeFounder",
+          "position",
+          "id",
+          "name",
+          "companyId",
+          "company",
+          "avatarImageUrl"
+        ]
+      },
+      "SdkPaginationMetaDto": {
+        "type": "object",
+        "properties": {
+          "nextCursor": {
+            "type": "string",
+            "description": "Cursor for the next page; null when no more pages are available. Every list is returned in a stable, documented order, so walking the cursors over an unchanged result set visits each row exactly once. Rows inserted or removed between page fetches shift the ones after them, which can duplicate or skip a row at the boundary — re-run the walk if you need a consistent snapshot.",
+            "nullable": true
+          }
+        },
+        "required": [
+          "nextCursor"
+        ]
+      },
+      "SdkProfilesListResponseDto": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SdkProfileDto"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SdkPaginationMetaDto"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SdkCreateProfileDto": {
+        "type": "object",
+        "properties": {
+          "surname": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Surname",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Email",
+            "format": "email",
+            "nullable": true,
+            "maxLength": 320
+          },
+          "telephone": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Telephone",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "country": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Country",
+            "nullable": true,
+            "description": "Country of residence",
+            "maxLength": 200
+          },
+          "avatarImageFileUuid": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Avatar",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Existing uploaded avatar file UUID; null clears the avatar. This endpoint does not upload files."
+          },
+          "expertiseAreas": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Area of expertise",
+            "nullable": true,
+            "maxLength": 10000
+          },
+          "educationLevel": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Education level",
+            "nullable": true,
+            "enum": [
+              "school",
+              "high-school",
+              "college",
+              "associate",
+              "bachelor",
+              "master",
+              "professional",
+              "doctoral"
+            ]
+          },
+          "linkedIn": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "LinkedIn",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "github": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "GitHub",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "website": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Website",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "gender": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Gender",
+            "nullable": true,
+            "enum": [
+              "male",
+              "female",
+              "other",
+              "n/a"
+            ]
+          },
+          "birthYear": {
+            "type": "integer",
+            "x-empty-as-null": true,
+            "title": "Year of birth",
+            "minimum": 1,
+            "nullable": true,
+            "description": "Year of birth; cannot be later than the current year"
+          },
+          "race": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Race",
+            "nullable": true,
+            "enum": [
+              "white",
+              "american-indian",
+              "asian",
+              "black",
+              "pacific",
+              "two-or-more",
+              "other"
+            ]
+          },
+          "nationality": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Nationality",
+            "nullable": true,
+            "description": "Nationality value from profiles.getConfig"
+          },
+          "ethnicity": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Ethnicity",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "twitter": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Twitter",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "facebook": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Facebook",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "rolesInCompany": {
+            "type": "array",
+            "uniqueItems": true,
+            "description": "Replaces the categorical roles for the specified company. Omit to preserve them; null is invalid. At least one role or position must remain.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "founder-cofounder",
+                "management",
+                "board-member",
+                "board-chairman"
+              ]
+            }
+          },
+          "position": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Position",
+            "nullable": true,
+            "enum": [
+              "chief-executive",
+              "chief-operating",
+              "chief-financial",
+              "chief-information",
+              "chief-technology",
+              "chief-marketing",
+              "chief-human-resources",
+              "chief-design",
+              "chief-data",
+              "chief-product",
+              "chief-customer",
+              "chief-revenue",
+              "chief-sales",
+              "president",
+              "vice-president",
+              "vp-operations",
+              "vp-finance",
+              "vp-technology",
+              "vp-marketing",
+              "vp-sales",
+              "vp-human-resources",
+              "vp-product",
+              "vp-design",
+              "vp-customer-support",
+              "vp-business-development",
+              "head-operations",
+              "head-finance",
+              "head-technology",
+              "head-marketing",
+              "head-human-resources",
+              "head-product",
+              "head-design",
+              "head-customer-support",
+              "head-business-development",
+              "lead-operations",
+              "lead-finance",
+              "lead-technology",
+              "lead-marketing",
+              "lead-human-resources",
+              "lead-product",
+              "lead-design",
+              "lead-customer-support",
+              "lead-business-development",
+              "chief-mobility-officer",
+              "evp-business-and-legal-affairs",
+              "global-general-manager",
+              "evp-international-co-productions",
+              "chief-creative-officer",
+              "executive-chairman",
+              "chief-experience-n-strategy-officer",
+              "chief-corporate-officer",
+              "chief-of-staff",
+              "chief-people-officer",
+              "chief-privacy-officer",
+              "chief-legal-officer",
+              "svp-people-operations-n-experience",
+              "svp-marketing",
+              "svp-product-n-analytics",
+              "evp-strategic-partnerships",
+              "svp-of-sales",
+              "svp-strategic-initiatives",
+              "head-of-talent",
+              "head-of-partnerships",
+              "engineering-manager",
+              "director-of-customer-success",
+              "chief-compliance-officer",
+              "chief-strategy-officer",
+              "general-counsel",
+              "vp-engineering",
+              "director-of-engineering",
+              "chief-engineer",
+              "chief-medical-officer",
+              "executive-editor",
+              "managing-editor",
+              "vp-strategy-and-transformation",
+              "chief-business-officer",
+              "advisor",
+              "other"
+            ],
+            "description": "Company position. Omit to preserve; null clears it. Use a value from profiles.getConfig."
+          },
+          "firstTimeFounder": {
+            "type": "boolean",
+            "x-empty-as-null": true,
+            "title": "First time founder",
+            "nullable": true,
+            "description": "True = Yes, false = No, null = Not specified. Omit to preserve. A non-null value requires the founder role."
+          },
+          "companyId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Given name",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "companyId",
+          "name"
+        ]
+      },
+      "SdkUpdateProfileDto": {
+        "type": "object",
+        "properties": {
+          "surname": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Surname",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Email",
+            "format": "email",
+            "nullable": true,
+            "maxLength": 320
+          },
+          "telephone": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Telephone",
+            "nullable": true,
+            "maxLength": 100
+          },
+          "country": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Country",
+            "nullable": true,
+            "description": "Country of residence",
+            "maxLength": 200
+          },
+          "avatarImageFileUuid": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Avatar",
+            "format": "uuid",
+            "nullable": true,
+            "description": "Existing uploaded avatar file UUID; null clears the avatar. This endpoint does not upload files."
+          },
+          "expertiseAreas": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Area of expertise",
+            "nullable": true,
+            "maxLength": 10000
+          },
+          "educationLevel": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Education level",
+            "nullable": true,
+            "enum": [
+              "school",
+              "high-school",
+              "college",
+              "associate",
+              "bachelor",
+              "master",
+              "professional",
+              "doctoral"
+            ]
+          },
+          "linkedIn": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "LinkedIn",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "github": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "GitHub",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "website": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Website",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "gender": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Gender",
+            "nullable": true,
+            "enum": [
+              "male",
+              "female",
+              "other",
+              "n/a"
+            ]
+          },
+          "birthYear": {
+            "type": "integer",
+            "x-empty-as-null": true,
+            "title": "Year of birth",
+            "minimum": 1,
+            "nullable": true,
+            "description": "Year of birth; cannot be later than the current year"
+          },
+          "race": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Race",
+            "nullable": true,
+            "enum": [
+              "white",
+              "american-indian",
+              "asian",
+              "black",
+              "pacific",
+              "two-or-more",
+              "other"
+            ]
+          },
+          "nationality": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Nationality",
+            "nullable": true,
+            "description": "Nationality value from profiles.getConfig"
+          },
+          "ethnicity": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Ethnicity",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "twitter": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Twitter",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "facebook": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Facebook",
+            "format": "uri",
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "rolesInCompany": {
+            "type": "array",
+            "uniqueItems": true,
+            "description": "Replaces the categorical roles for the specified company. Omit to preserve them; null is invalid. At least one role or position must remain.",
+            "items": {
+              "type": "string",
+              "enum": [
+                "founder-cofounder",
+                "management",
+                "board-member",
+                "board-chairman"
+              ]
+            }
+          },
+          "position": {
+            "type": "string",
+            "x-empty-as-null": true,
+            "title": "Position",
+            "nullable": true,
+            "enum": [
+              "chief-executive",
+              "chief-operating",
+              "chief-financial",
+              "chief-information",
+              "chief-technology",
+              "chief-marketing",
+              "chief-human-resources",
+              "chief-design",
+              "chief-data",
+              "chief-product",
+              "chief-customer",
+              "chief-revenue",
+              "chief-sales",
+              "president",
+              "vice-president",
+              "vp-operations",
+              "vp-finance",
+              "vp-technology",
+              "vp-marketing",
+              "vp-sales",
+              "vp-human-resources",
+              "vp-product",
+              "vp-design",
+              "vp-customer-support",
+              "vp-business-development",
+              "head-operations",
+              "head-finance",
+              "head-technology",
+              "head-marketing",
+              "head-human-resources",
+              "head-product",
+              "head-design",
+              "head-customer-support",
+              "head-business-development",
+              "lead-operations",
+              "lead-finance",
+              "lead-technology",
+              "lead-marketing",
+              "lead-human-resources",
+              "lead-product",
+              "lead-design",
+              "lead-customer-support",
+              "lead-business-development",
+              "chief-mobility-officer",
+              "evp-business-and-legal-affairs",
+              "global-general-manager",
+              "evp-international-co-productions",
+              "chief-creative-officer",
+              "executive-chairman",
+              "chief-experience-n-strategy-officer",
+              "chief-corporate-officer",
+              "chief-of-staff",
+              "chief-people-officer",
+              "chief-privacy-officer",
+              "chief-legal-officer",
+              "svp-people-operations-n-experience",
+              "svp-marketing",
+              "svp-product-n-analytics",
+              "evp-strategic-partnerships",
+              "svp-of-sales",
+              "svp-strategic-initiatives",
+              "head-of-talent",
+              "head-of-partnerships",
+              "engineering-manager",
+              "director-of-customer-success",
+              "chief-compliance-officer",
+              "chief-strategy-officer",
+              "general-counsel",
+              "vp-engineering",
+              "director-of-engineering",
+              "chief-engineer",
+              "chief-medical-officer",
+              "executive-editor",
+              "managing-editor",
+              "vp-strategy-and-transformation",
+              "chief-business-officer",
+              "advisor",
+              "other"
+            ],
+            "description": "Company position. Omit to preserve; null clears it. Use a value from profiles.getConfig."
+          },
+          "firstTimeFounder": {
+            "type": "boolean",
+            "x-empty-as-null": true,
+            "title": "First time founder",
+            "nullable": true,
+            "description": "True = Yes, false = No, null = Not specified. Omit to preserve. A non-null value requires the founder role."
+          },
+          "companyId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "name": {
+            "type": "string",
+            "description": "Given name; cannot be cleared",
+            "minLength": 1,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "companyId"
+        ]
+      },
+      "SdkPrepareProfileAvatarUploadDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Company context for this directory entry. Must match an existing association; profiles cannot be moved to another company."
+          },
+          "filename": {
+            "type": "string",
+            "description": "Original image filename.",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "filetype": {
+            "type": "string",
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp"
+            ],
+            "description": "Image MIME type. SVG and animated formats are not supported."
+          },
+          "filesize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5242880,
+            "description": "Exact file size in bytes; maximum 5 MiB."
+          }
+        },
+        "required": [
+          "companyId",
+          "filename",
+          "filetype",
+          "filesize"
+        ]
+      },
+      "SdkProfileAvatarUploadDto": {
+        "type": "object",
+        "properties": {
+          "fileUuid": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "uploadUrl": {
+            "type": "string",
+            "description": "Short-lived upload URL. Treat it as a credential; do not persist or log it."
+          },
+          "httpMethod": {
+            "type": "string",
+            "enum": [
+              "PUT"
+            ],
+            "description": "Send raw image bytes using this HTTP method, outside the MCP JSON payload."
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Include these headers on the upload. Do not forward the Rundit API key. If-None-Match prevents overwriting an uploaded object."
+          },
+          "expiresIn": {
+            "type": "integer",
+            "description": "Upload URL lifetime in seconds. Obtain a fresh upload if it expires."
+          },
+          "maxBytes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fileUuid",
+          "uploadUrl",
+          "httpMethod",
+          "headers",
+          "expiresIn",
+          "maxBytes"
+        ]
+      },
+      "SdkCompleteProfileAvatarUploadDto": {
+        "type": "object",
+        "properties": {
+          "companyId": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Company context for this directory entry. Must match an existing association; profiles cannot be moved to another company."
+          },
+          "fileUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "File UUID returned by prepareAvatarUpload."
+          }
+        },
+        "required": [
+          "companyId",
+          "fileUuid"
+        ]
+      },
       "GetBatchDashboardBodyDto": {
         "type": "object",
         "properties": {
@@ -2463,7 +4217,7 @@
           },
           "cursor": {
             "type": "string",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
           },
           "companyIds": {
             "description": "Company identifiers to include in the batch.",
@@ -2647,29 +4401,6 @@
           "type",
           "currency",
           "logoImageFileUuid"
-        ]
-      },
-      "SdkCompanyReferenceDto": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "number",
-            "description": "Company identifier"
-          },
-          "name": {
-            "type": "string",
-            "description": "Company display name"
-          },
-          "type": {
-            "type": "string",
-            "description": "Company type",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "type"
         ]
       },
       "SdkCompanyGroupReferenceDto": {
@@ -3543,19 +5274,6 @@
           "metrics",
           "transactions",
           "reports"
-        ]
-      },
-      "SdkPaginationMetaDto": {
-        "type": "object",
-        "properties": {
-          "nextCursor": {
-            "type": "string",
-            "description": "Cursor for the next page; null when no more pages are available. Every list is returned in a stable, documented order, so walking the cursors over an unchanged result set visits each row exactly once. Rows inserted or removed between page fetches shift the ones after them, which can duplicate or skip a row at the boundary — re-run the walk if you need a consistent snapshot.",
-            "nullable": true
-          }
-        },
-        "required": [
-          "nextCursor"
         ]
       },
       "SdkBatchDashboardResponseDto": {
@@ -6228,7 +7946,7 @@
           },
           "cursor": {
             "type": "string",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
           },
           "includePoints": {
             "type": "boolean",
@@ -6573,7 +8291,7 @@
           },
           "cursor": {
             "type": "string",
-            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Carries the page size it was issued with, so a follow-up call needs only the cursor. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
+            "description": "Opaque cursor from a previous response's `meta.nextCursor`. Repeat the original filters and pass nextCursor as cursor; limit can be omitted because the cursor carries its page size. Valid solely for the endpoint, filters, and caller that produced it — change any of them and you get 422; start again without a cursor. Paging reflects the data as of each request, so rows added or removed mid-walk can shift positions."
           },
           "metricTypeIds": {
             "description": "Metric type identifiers to aggregate (discover ids via /metrics/types). Entries are returned in this order. Required unless `metricTypeNames` is given; intersected with it when both are given.",
