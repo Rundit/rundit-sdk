@@ -633,7 +633,7 @@
     },
     "/api/v2/sdk/profiles/{id}/avatar/uploads": {
       "post": {
-        "description": "Returns a short-lived, single-use PUT URL for an existing profile. Accepts JPEG, PNG or WebP, up to 5 MiB and 16 megapixels. The host or client must send the exact raw image bytes to uploadUrl with the returned headers; do not send base64, multipart or JSON, and never forward the Rundit API key. This tool does not read chat attachments or local paths. After uploading, call profiles.completeAvatarUpload with fileUuid. Requires edit access to every company associated with the profile.",
+        "description": "Returns a short-lived, single-use PUT URL for an existing profile. Accepts JPEG, PNG or WebP, up to 5 MiB and 16 megapixels. The host or client must send the exact raw image bytes to uploadUrl with the returned headers; do not send base64, multipart or JSON, and never forward the Rundit API key. This tool does not read chat attachments or local paths. After uploading, call profiles.completeAvatarUpload with fileUuid. Requires edit access to every company associated with the profile. If the upload is explicitly blocked by the client network policy, explain the restriction and ask the user or their administrator to allowlist the exact hostname from uploadUrl, not a wildcard covering all storage domains. Once access is granted, prepare a fresh upload URL and retry. If policy cannot be changed, suggest uploading through the Rundit UI. Do not assume other upload failures are network restrictions: expired signatures, invalid headers and permission errors require separate diagnosis.",
         "operationId": "profiles.prepareAvatarUpload",
         "parameters": [
           {
