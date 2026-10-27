@@ -61,12 +61,35 @@ marker here — the bump type is computed (decision 3).
 
 ## Hosted MCP rebuilds
 
-After SDK publication, the workflow POSTs to `CLOUD66_MCP_REDEPLOY_HOOK_TEST`
-for rc releases or `CLOUD66_MCP_REDEPLOY_HOOK_PROD` for stable releases. Configure
-these secrets with Cloud 66 hooks selecting the **mcp** service's Build/Publish
-and Parallel Deployment profile. A successful request starts the rebuild;
-follow its build and rollout status in Cloud 66. Hook failures fail the workflow
-without printing the secret URL.
+After successful SDK publication, the workflow dispatches `update-sdk.yml` in
+`Rundit/rundit-mcp` on `main`, passing the exact version from the generated
+`packages/client/package.json` and the channel (`rc` or `latest`). It does not
+resolve a moving npm tag or call Cloud 66 directly.
+
+MCP's workflow updates its dependency and lockfile on `main` for `rc`, or
+`production` for `latest`. It runs build, lint, and tests before committing and
+pushing those manifests, then calls the matching Cloud 66 hook. That Git change
+gives Cloud 66 new source to build, and its hosted Dockerfile installs the locked
+SDK version. The receiving workflow must be deployed and configured before this
+sender is enabled.
+
+Required secrets in **rundit-sdk**: `SDK_BOT_APP_ID` and `SDK_BOT_PRIVATE_KEY`.
+The App must be installed on `rundit-mcp` with **Actions write** permission to
+dispatch its workflow. MCP also needs the App credentials with **Contents write**
+permission for dependency commits and both `CLOUD66_MCP_REDEPLOY_HOOK_TEST` and
+`CLOUD66_MCP_REDEPLOY_HOOK_PROD` secrets. The Cloud 66 hooks now belong in MCP;
+the SDK workflow no longer reads them.
+
+SDK workflow success confirms publication and accepted dispatch, not successful
+MCP deployment. Its job summary links to MCP's workflow runs; check those for
+validation/hook failures and Cloud 66 for build/rollout status. Publication and
+dispatch are allowed to finish rather than being cancelled by a newer release.
+
+If dispatch or deployment fails after publication, manually run MCP's
+`Update SDK and Deploy MCP` workflow on `main` with the same version and channel.
+It supports retrying an already-pinned version without another commit. A rerun
+of the SDK publisher may find no surface changes and skip publication and
+dispatch, so it is not the deployment retry mechanism.
 
 ## Channel mapping (decision 2)
 
