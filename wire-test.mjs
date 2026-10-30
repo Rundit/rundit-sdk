@@ -272,3 +272,17 @@ test('avatar helper rejects paths and empty images instead of serializing them',
   }
   assert.equal(calls.length, 0)
 })
+
+
+test('MCP delegation uses its own header without forwarding an OAuth token or API key', async () => {
+  const { calls, mockFetch } = makeMockFetch()
+  const client = createClient({ baseUrl: BASE_URL, mcpDelegation: 'internal-delegation', fetch: mockFetch })
+  await client.companies.getAll()
+  assert.equal(calls[0].headers['X-Rundit-Mcp-Delegation'], 'internal-delegation')
+  assert.equal(calls[0].headers['X-API-Key'], undefined)
+  assert.equal(calls[0].headers.Authorization, undefined)
+})
+test('SDK rejects missing or ambiguous credentials', () => {
+  assert.throws(() => createClient({}), /Exactly one/)
+  assert.throws(() => createClient({ apiKey: 'key', mcpDelegation: 'delegation' }), /Exactly one/)
+})
