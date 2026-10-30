@@ -668,7 +668,7 @@ function createRequester(options) {
     Accept: 'application/json',
     ...(shouldBypassNgrokBrowserWarning ? { 'ngrok-skip-browser-warning': '69420' } : {}),
     ...options.headers,
-    "X-API-Key": options.apiKey,
+    ...(options.mcpDelegation ? { 'X-Rundit-Mcp-Delegation': options.mcpDelegation } : { 'X-API-Key': options.apiKey }),
   }
 
   return async ({ method, path, pathParams, query, body, signal }) => {
@@ -749,8 +749,8 @@ export function createClient(options) {
     throw new Error('options is required')
   }
 
-  if (!options.apiKey) {
-    throw new Error('options.apiKey is required')
+  if (Boolean(options.apiKey) === Boolean(options.mcpDelegation)) {
+    throw new Error('Exactly one of apiKey or mcpDelegation is required')
   }
 
   const request = createRequester(options)
