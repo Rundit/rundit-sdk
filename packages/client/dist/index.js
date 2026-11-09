@@ -661,6 +661,9 @@ async function parseResponse(response) {
 }
 
 function createRequester(options) {
+  if (options.mcpDelegation && Object.keys(options.headers || {}).some(name => ['authorization', 'x-api-key', 'x-rundit-mcp-delegation'].includes(name.toLowerCase()))) {
+    throw new Error('Delegation authentication cannot be combined with custom credential headers')
+  }
   const fetchImplementation = resolveFetch(options.fetch)
   const baseUrl = normalizeBaseUrl(options.baseUrl || defaultBaseUrl)
   const shouldBypassNgrokBrowserWarning = shouldSendNgrokBypassHeader(baseUrl)

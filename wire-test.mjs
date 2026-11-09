@@ -286,3 +286,12 @@ test('SDK rejects missing or ambiguous credentials', () => {
   assert.throws(() => createClient({}), /Exactly one/)
   assert.throws(() => createClient({ apiKey: 'key', mcpDelegation: 'delegation' }), /Exactly one/)
 })
+
+
+test('delegation mode rejects conflicting custom credential headers case-insensitively', () => {
+  for (const name of ['Authorization', 'authorization', 'AUTHORIZATION', 'X-API-Key', 'x-api-key', 'X-Rundit-Mcp-Delegation']) {
+    assert.throws(() => createClient({ mcpDelegation: 'delegation', headers: { [name]: 'conflicting' } }), /custom credential headers/)
+  }
+  assert.doesNotThrow(() => createClient({ apiKey: 'key', headers: { Authorization: 'existing-behavior' } }))
+  assert.doesNotThrow(() => createClient({ mcpDelegation: 'delegation', headers: { 'X-Request-ID': 'request' } }))
+})
