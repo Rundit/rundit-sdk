@@ -661,7 +661,8 @@ async function parseResponse(response) {
 }
 
 function createRequester(options) {
-  if (options.mcpDelegation && Object.keys(options.headers || {}).some(name => ['authorization', 'x-api-key', 'x-rundit-mcp-delegation'].includes(name.toLowerCase()))) {
+  const mcpDelegation = options.mcpDelegation
+  if (mcpDelegation && Object.keys(options.headers || {}).some(name => ['authorization', 'x-api-key', 'x-rundit-mcp-delegation'].includes(name.toLowerCase()))) {
     throw new Error('Delegation authentication cannot be combined with custom credential headers')
   }
   const fetchImplementation = resolveFetch(options.fetch)
@@ -671,7 +672,7 @@ function createRequester(options) {
     Accept: 'application/json',
     ...(shouldBypassNgrokBrowserWarning ? { 'ngrok-skip-browser-warning': '69420' } : {}),
     ...options.headers,
-    ...(options.mcpDelegation ? { 'X-Rundit-Mcp-Delegation': options.mcpDelegation } : { 'X-API-Key': options.apiKey }),
+    ...(mcpDelegation ? { 'X-Rundit-Mcp-Delegation': mcpDelegation } : { 'X-API-Key': options.apiKey }),
   }
 
   return async ({ method, path, pathParams, query, body, signal }) => {
@@ -681,7 +682,7 @@ function createRequester(options) {
 
     const response = await fetchImplementation(url, {
       method,
-      ...(options.mcpDelegation ? { redirect: 'error' } : {}),
+      ...(mcpDelegation ? { redirect: 'error' } : {}),
       headers: requestHeaders,
       body: hasBody ? JSON.stringify(body) : undefined,
       signal,

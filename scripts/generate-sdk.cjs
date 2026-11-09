@@ -605,7 +605,8 @@ async function parseResponse(response) {
 }
 
 function createRequester(options) {
-  ${packageConfig.auth.optionKey === 'apiKey' ? `if (options.mcpDelegation && Object.keys(options.headers || {}).some(name => ['authorization', 'x-api-key', 'x-rundit-mcp-delegation'].includes(name.toLowerCase()))) {
+  ${packageConfig.auth.optionKey === 'apiKey' ? `const mcpDelegation = options.mcpDelegation
+  if (mcpDelegation && Object.keys(options.headers || {}).some(name => ['authorization', 'x-api-key', 'x-rundit-mcp-delegation'].includes(name.toLowerCase()))) {
     throw new Error('Delegation authentication cannot be combined with custom credential headers')
   }` : ''}
   const fetchImplementation = resolveFetch(options.fetch)
@@ -615,7 +616,7 @@ function createRequester(options) {
     Accept: 'application/json',
     ...(shouldBypassNgrokBrowserWarning ? { 'ngrok-skip-browser-warning': '69420' } : {}),
     ...options.headers,
-    ${packageConfig.auth.optionKey === 'apiKey' ? `...(options.mcpDelegation ? { 'X-Rundit-Mcp-Delegation': options.mcpDelegation } : { 'X-API-Key': options.apiKey }),` : `${JSON.stringify(packageConfig.auth.headerName)}: ${packageConfig.auth.headerValueExpression},`}
+    ${packageConfig.auth.optionKey === 'apiKey' ? `...(mcpDelegation ? { 'X-Rundit-Mcp-Delegation': mcpDelegation } : { 'X-API-Key': options.apiKey }),` : `${JSON.stringify(packageConfig.auth.headerName)}: ${packageConfig.auth.headerValueExpression},`}
   }
 
   return async ({ method, path, pathParams, query, body, signal }) => {
@@ -625,7 +626,7 @@ function createRequester(options) {
 
     const response = await fetchImplementation(url, {
       method,
-      ${packageConfig.auth.optionKey === 'apiKey' ? "...(options.mcpDelegation ? { redirect: 'error' } : {})," : ''}
+      ${packageConfig.auth.optionKey === 'apiKey' ? "...(mcpDelegation ? { redirect: 'error' } : {})," : ''}
       headers: requestHeaders,
       body: hasBody ? JSON.stringify(body) : undefined,
       signal,

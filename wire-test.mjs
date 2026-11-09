@@ -313,7 +313,10 @@ test('delegation credentials never follow a cross-origin redirect', async () => 
   })
   try {
     await new Promise(resolve => origin.listen(0, '127.0.0.1', resolve))
-    const client = createClient({ baseUrl: `http://127.0.0.1:${origin.address().port}`, mcpDelegation: 'delegation-fixture' })
+    const options = { baseUrl: `http://127.0.0.1:${origin.address().port}`, mcpDelegation: 'delegation-fixture' }
+    const client = createClient(options)
+    // Caller-owned options may change after construction; authentication must not.
+    delete options.mcpDelegation
     await assert.rejects(client.companies.getAll())
     assert.equal(originRequests, 1)
     assert.equal(destinationRequests, 0)
