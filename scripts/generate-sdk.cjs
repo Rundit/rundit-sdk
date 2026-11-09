@@ -625,6 +625,7 @@ function createRequester(options) {
 
     const response = await fetchImplementation(url, {
       method,
+      ${packageConfig.auth.optionKey === 'apiKey' ? "...(options.mcpDelegation ? { redirect: 'error' } : {})," : ''}
       headers: requestHeaders,
       body: hasBody ? JSON.stringify(body) : undefined,
       signal,

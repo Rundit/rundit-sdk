@@ -681,6 +681,7 @@ function createRequester(options) {
 
     const response = await fetchImplementation(url, {
       method,
+      ...(options.mcpDelegation ? { redirect: 'error' } : {}),
       headers: requestHeaders,
       body: hasBody ? JSON.stringify(body) : undefined,
       signal,
