@@ -14,6 +14,7 @@
 // test runner, no extra dependencies).
 
 import { test } from 'node:test'
+import { createServer } from 'node:http'
 import assert from 'node:assert/strict'
 import { createEmbedClient, routeManifest as embedManifest } from './packages/embed/dist/index.js'
 import { createClient, routeManifest as clientManifest } from './packages/client/dist/index.js'
@@ -271,4 +272,56 @@ test('avatar helper rejects paths and empty images instead of serializing them',
     )
   }
   assert.equal(calls.length, 0)
+})
+
+
+test('MCP delegation uses its own header without forwarding an OAuth token or API key', async () => {
+  const { calls, mockFetch } = makeMockFetch()
+  const client = createClient({ baseUrl: BASE_URL, mcpDelegation: 'internal-delegation', fetch: mockFetch })
+  await client.companies.getAll()
+  assert.equal(calls[0].headers['X-Rundit-Mcp-Delegation'], 'internal-delegation')
+  assert.equal(calls[0].headers['X-API-Key'], undefined)
+  assert.equal(calls[0].headers.Authorization, undefined)
+})
+test('SDK rejects missing or ambiguous credentials', () => {
+  assert.throws(() => createClient({}), /Exactly one/)
+  assert.throws(() => createClient({ apiKey: 'key', mcpDelegation: 'delegation' }), /Exactly one/)
+})
+
+
+test('delegation mode rejects conflicting custom credential headers case-insensitively', () => {
+  for (const name of ['Authorization', 'authorization', 'AUTHORIZATION', 'X-API-Key', 'x-api-key', 'X-Rundit-Mcp-Delegation']) {
+    assert.throws(() => createClient({ mcpDelegation: 'delegation', headers: { [name]: 'conflicting' } }), /custom credential headers/)
+  }
+  assert.doesNotThrow(() => createClient({ apiKey: 'key', headers: { Authorization: 'existing-behavior' } }))
+  assert.doesNotThrow(() => createClient({ mcpDelegation: 'delegation', headers: { 'X-Request-ID': 'request' } }))
+})
+
+
+test('delegation credentials never follow a cross-origin redirect', async () => {
+  let destinationRequests = 0
+  let originRequests = 0
+  const destination = createServer((_req, res) => {
+    destinationRequests++
+    res.end('{}')
+  })
+  await new Promise(resolve => destination.listen(0, '127.0.0.1', resolve))
+  const origin = createServer((_req, res) => {
+    originRequests++
+    res.writeHead(307, { Location: `http://127.0.0.1:${destination.address().port}/` })
+    res.end()
+  })
+  try {
+    await new Promise(resolve => origin.listen(0, '127.0.0.1', resolve))
+    const options = { baseUrl: `http://127.0.0.1:${origin.address().port}`, mcpDelegation: 'delegation-fixture' }
+    const client = createClient(options)
+    // Caller-owned options may change after construction; authentication must not.
+    delete options.mcpDelegation
+    await assert.rejects(client.companies.getAll())
+    assert.equal(originRequests, 1)
+    assert.equal(destinationRequests, 0)
+  } finally {
+    await new Promise(resolve => origin.close(resolve))
+    await new Promise(resolve => destination.close(resolve))
+  }
 })

@@ -29,8 +29,8 @@ const { execFileSync } = require('child_process')
 const { sdkPackages } = require('./contract.cjs')
 
 const rootDir = path.resolve(__dirname, '..')
-const packagesRootDir = path.join(rootDir, 'packages')
-const openApiSpecPath = path.join(rootDir, 'spec', 'sdk.openapi.json')
+const packagesRootDir = process.env.RUNDIT_SDK_PACKAGES_DIR ? path.resolve(rootDir, process.env.RUNDIT_SDK_PACKAGES_DIR) : path.join(rootDir, 'packages')
+const openApiSpecPath = process.env.RUNDIT_SDK_OPENAPI_PATH ? path.resolve(rootDir, process.env.RUNDIT_SDK_OPENAPI_PATH) : path.join(rootDir, 'spec', 'sdk.openapi.json')
 const versionsPath = path.join(rootDir, 'versions.json')
 const httpMethods = new Set(['get', 'post', 'put', 'patch', 'delete'])
 const defaultSdkBaseUrl = 'https://api.rundit.com/api/v2/sdk'
@@ -605,6 +605,10 @@ async function parseResponse(response) {
 }
 
 function createRequester(options) {
+  ${packageConfig.auth.optionKey === 'apiKey' ? `const mcpDelegation = options.mcpDelegation
+  if (mcpDelegation && Object.keys(options.headers || {}).some(name => ['authorization', 'x-api-key', 'x-rundit-mcp-delegation'].includes(name.toLowerCase()))) {
+    throw new Error('Delegation authentication cannot be combined with custom credential headers')
+  }` : ''}
   const fetchImplementation = resolveFetch(options.fetch)
   const baseUrl = normalizeBaseUrl(options.baseUrl || defaultBaseUrl)
   const shouldBypassNgrokBrowserWarning = shouldSendNgrokBypassHeader(baseUrl)
@@ -612,7 +616,7 @@ function createRequester(options) {
     Accept: 'application/json',
     ...(shouldBypassNgrokBrowserWarning ? { 'ngrok-skip-browser-warning': '69420' } : {}),
     ...options.headers,
-    ${JSON.stringify(packageConfig.auth.headerName)}: ${packageConfig.auth.headerValueExpression},
+    ${packageConfig.auth.optionKey === 'apiKey' ? `...(mcpDelegation ? { 'X-Rundit-Mcp-Delegation': mcpDelegation } : { 'X-API-Key': options.apiKey }),` : `${JSON.stringify(packageConfig.auth.headerName)}: ${packageConfig.auth.headerValueExpression},`}
   }
 
   return async ({ method, path, pathParams, query, body, signal }) => {
@@ -622,6 +626,7 @@ function createRequester(options) {
 
     const response = await fetchImplementation(url, {
       method,
+      ${packageConfig.auth.optionKey === 'apiKey' ? "...(mcpDelegation ? { redirect: 'error' } : {})," : ''}
       headers: requestHeaders,
       body: hasBody ? JSON.stringify(body) : undefined,
       signal,
@@ -649,8 +654,8 @@ export function ${packageConfig.factoryName}(options) {
     throw new Error('options is required')
   }
 
-  if (!options.${packageConfig.auth.optionKey}) {
-    throw new Error('options.${packageConfig.auth.optionKey} is required')
+  if (${packageConfig.auth.optionKey === 'apiKey' ? 'Boolean(options.apiKey) === Boolean(options.mcpDelegation)' : `!options.${packageConfig.auth.optionKey}`}) {
+    throw new Error('${packageConfig.auth.optionKey === 'apiKey' ? 'Exactly one of apiKey or mcpDelegation is required' : `options.${packageConfig.auth.optionKey} is required`}')
   }
 
   const request = createRequester(options)
@@ -700,12 +705,12 @@ export declare class RunditSdkError extends Error {
   constructor(message: string, details: RunditSdkErrorDetails)
 }
 
-export interface ${packageConfig.optionsTypeName} {
+export ${packageConfig.auth.optionKey === 'apiKey' ? 'type' : 'interface'} ${packageConfig.optionsTypeName}${packageConfig.auth.optionKey === 'apiKey' ? ' =' : ''} {
   baseUrl?: string
-  ${packageConfig.auth.optionKey}: ${packageConfig.auth.optionType}
+${packageConfig.auth.optionKey === 'apiKey' ? '' : `  ${packageConfig.auth.optionKey}: ${packageConfig.auth.optionType}`}
   fetch?: typeof fetch
   headers?: Record<string, string>
-}
+}${packageConfig.auth.optionKey === 'apiKey' ? ' & ({ apiKey: string; mcpDelegation?: never } | { apiKey?: never; /** Internal MCP-to-SDK token, not an OAuth access token. */ mcpDelegation: string })' : ''}
 
 ${
   supportsAvatarUpload(packageRoutes)
