@@ -59,6 +59,15 @@ versions.json               # last published stable per package
 `versions.json` is the durable version source. There is **no** `release-type.json`
 marker here — the bump type is computed (decision 3).
 
+## Hosted MCP rebuilds
+
+After SDK publication, the workflow POSTs to `CLOUD66_MCP_REDEPLOY_HOOK_TEST`
+for rc releases or `CLOUD66_MCP_REDEPLOY_HOOK_PROD` for stable releases. Configure
+these secrets with Cloud 66 hooks selecting the **mcp** service's Build/Publish
+and Parallel Deployment profile. A successful request starts the rebuild;
+follow its build and rollout status in Cloud 66. Hook failures fail the workflow
+without printing the secret URL.
+
 ## Channel mapping (decision 2)
 
 | rundit-back branch | spec lands on rundit-sdk branch | dist-tag published |

@@ -110,6 +110,7 @@ jobs:
         run: echo "type=patch" >> "$GITHUB_OUTPUT"
 
       - name: Publish rc (develop)
+        id: publish_rc
         if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'rc'
         # rc artifacts are previews; not committed back. The version is
         # bump(lastStable, type)-rc.<run_number>.
@@ -123,6 +124,7 @@ jobs:
           SDK_NPM_DIST_TAG: rc
 
       - name: Publish release (production)
+        id: publish_release
         if: steps.drift.outputs.publish == 'true' && steps.channel.outputs.channel == 'release'
         # Bump versions.json by the classified type, bake it into the packages, publish
         # to the latest tag, then commit the authoritative generated source below.
@@ -144,3 +146,14 @@ jobs:
           fi
           git commit -m "chore: publish SDK packages [skip ci]"
           git push
+
+      - name: Rebuild hosted MCP
+        # A failed source commit must not skip the hook after successful publication.
+        if: ${{ !cancelled() && (steps.publish_rc.outcome == 'success' || steps.publish_release.outcome == 'success') }}
+        env:
+          MCP_REDEPLOY_HOOK: ${{ secrets[steps.channel.outputs.channel == 'release' && 'CLOUD66_MCP_REDEPLOY_HOOK_PROD' || 'CLOUD66_MCP_REDEPLOY_HOOK_TEST'] }}
+        run: |
+          if ! curl --silent --fail --output /dev/null --max-time 30 --request POST "$MCP_REDEPLOY_HOOK"; then
+            echo '::error::MCP rebuild webhook failed.'
+            exit 1
+          fi
