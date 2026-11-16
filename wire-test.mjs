@@ -14,6 +14,7 @@
 // test runner, no extra dependencies).
 
 import { test } from 'node:test'
+import { createServer } from 'node:http'
 import assert from 'node:assert/strict'
 import { createEmbedClient, routeManifest as embedManifest } from './packages/embed/dist/index.js'
 import { createClient, routeManifest as clientManifest } from './packages/client/dist/index.js'
@@ -159,3 +160,168 @@ for (const suite of SUITES) {
     }
   }
 }
+
+function avatarFetch({ failUpload = false } = {}) {
+  const calls = []
+  const descriptor = {
+    fileUuid: 'upload-id',
+    uploadUrl: 'https://storage.example.test/avatar?signature=secret',
+    httpMethod: 'PUT',
+    headers: { 'Content-Type': 'image/png', 'If-None-Match': '*' },
+    expiresIn: 600,
+    maxBytes: 5242880,
+  }
+  const fetch = async (url, init) => {
+    calls.push({ url: String(url), init })
+    if (calls.length === 1) return Response.json(descriptor)
+    if (calls.length === 2) return new Response('', { status: failUpload ? 403 : 200 })
+    return Response.json({
+      id: 'profile-id',
+      avatarImageFileUuid: 'upload-id',
+      avatarImageUrl: 'https://images.example.test/avatar.png',
+    })
+  }
+  return { fetch, calls, descriptor }
+}
+
+test('avatar helper transfers exact bytes without API credentials then attaches the avatar', async () => {
+  const { fetch, calls, descriptor } = avatarFetch()
+  const client = createClient({
+    apiKey: 'private-api-key',
+    baseUrl: BASE_URL,
+    fetch,
+    headers: {
+      Authorization: 'private-authorization',
+      'x-private-header': 'private-value',
+    },
+  })
+  const file = new Uint8Array([0, 255, 42, 128])
+  const signal = new AbortController().signal
+  const result = await client.profiles.uploadAvatar(
+    'profile-id',
+    {
+      companyId: 123,
+      file,
+      filename: 'avatar.png',
+      filetype: 'image/png',
+    },
+    { signal },
+  )
+  assert.equal(calls.length, 3)
+  assert.deepEqual(JSON.parse(calls[0].init.body), {
+    companyId: 123,
+    filename: 'avatar.png',
+    filetype: 'image/png',
+    filesize: 4,
+  })
+  assert.equal(calls[1].url, descriptor.uploadUrl)
+  assert.equal(calls[1].init.method, 'PUT')
+  assert.equal(calls[1].init.body, file)
+  assert.deepEqual(calls[1].init.headers, descriptor.headers)
+  assert.equal(calls[1].init.credentials, 'omit')
+  assert.equal(calls[1].init.redirect, 'error')
+  assert.equal(calls[1].init.signal, signal)
+  assert.deepEqual(JSON.parse(calls[2].init.body), {
+    companyId: 123,
+    fileUuid: 'upload-id',
+  })
+  assert.equal(result.avatarImageFileUuid, 'upload-id')
+})
+
+test('avatar helper accepts Blob and uses its MIME type and exact size', async () => {
+  const { fetch, calls } = avatarFetch()
+  const client = createClient({ apiKey: 'test-key', fetch })
+  const file = new Blob([new Uint8Array([1, 2, 3])], { type: 'image/png' })
+  await client.profiles.uploadAvatar('profile-id', {
+    companyId: 123,
+    file,
+    filename: 'avatar.png',
+  })
+  assert.equal(JSON.parse(calls[0].init.body).filetype, 'image/png')
+  assert.equal(JSON.parse(calls[0].init.body).filesize, 3)
+  assert.equal(calls[1].init.body, file)
+})
+
+test('failed avatar byte transfer never completes or attaches an avatar', async () => {
+  const { fetch, calls } = avatarFetch({ failUpload: true })
+  const client = createClient({ apiKey: 'test-key', fetch })
+  await assert.rejects(
+    client.profiles.uploadAvatar('profile-id', {
+      companyId: 123,
+      file: new Uint8Array([1]),
+      filename: 'avatar.png',
+      filetype: 'image/png',
+    }),
+    { status: 403 },
+  )
+  assert.equal(calls.length, 2)
+})
+
+test('avatar helper rejects paths and empty images instead of serializing them', async () => {
+  const { fetch, calls } = avatarFetch()
+  const client = createClient({ apiKey: 'test-key', fetch })
+  for (const file of ['/tmp/avatar.png', new Uint8Array([])]) {
+    await assert.rejects(
+      client.profiles.uploadAvatar('profile-id', {
+        companyId: 123,
+        file,
+        filename: 'avatar.png',
+        filetype: 'image/png',
+      }),
+      TypeError,
+    )
+  }
+  assert.equal(calls.length, 0)
+})
+
+
+test('MCP delegation uses its own header without forwarding an OAuth token or API key', async () => {
+  const { calls, mockFetch } = makeMockFetch()
+  const client = createClient({ baseUrl: BASE_URL, mcpDelegation: 'internal-delegation', fetch: mockFetch })
+  await client.companies.getAll()
+  assert.equal(calls[0].headers['X-Rundit-Mcp-Delegation'], 'internal-delegation')
+  assert.equal(calls[0].headers['X-API-Key'], undefined)
+  assert.equal(calls[0].headers.Authorization, undefined)
+})
+test('SDK rejects missing or ambiguous credentials', () => {
+  assert.throws(() => createClient({}), /Exactly one/)
+  assert.throws(() => createClient({ apiKey: 'key', mcpDelegation: 'delegation' }), /Exactly one/)
+})
+
+
+test('delegation mode rejects conflicting custom credential headers case-insensitively', () => {
+  for (const name of ['Authorization', 'authorization', 'AUTHORIZATION', 'X-API-Key', 'x-api-key', 'X-Rundit-Mcp-Delegation']) {
+    assert.throws(() => createClient({ mcpDelegation: 'delegation', headers: { [name]: 'conflicting' } }), /custom credential headers/)
+  }
+  assert.doesNotThrow(() => createClient({ apiKey: 'key', headers: { Authorization: 'existing-behavior' } }))
+  assert.doesNotThrow(() => createClient({ mcpDelegation: 'delegation', headers: { 'X-Request-ID': 'request' } }))
+})
+
+
+test('delegation credentials never follow a cross-origin redirect', async () => {
+  let destinationRequests = 0
+  let originRequests = 0
+  const destination = createServer((_req, res) => {
+    destinationRequests++
+    res.end('{}')
+  })
+  await new Promise(resolve => destination.listen(0, '127.0.0.1', resolve))
+  const origin = createServer((_req, res) => {
+    originRequests++
+    res.writeHead(307, { Location: `http://127.0.0.1:${destination.address().port}/` })
+    res.end()
+  })
+  try {
+    await new Promise(resolve => origin.listen(0, '127.0.0.1', resolve))
+    const options = { baseUrl: `http://127.0.0.1:${origin.address().port}`, mcpDelegation: 'delegation-fixture' }
+    const client = createClient(options)
+    // Caller-owned options may change after construction; authentication must not.
+    delete options.mcpDelegation
+    await assert.rejects(client.companies.getAll())
+    assert.equal(originRequests, 1)
+    assert.equal(destinationRequests, 0)
+  } finally {
+    await new Promise(resolve => origin.close(resolve))
+    await new Promise(resolve => destination.close(resolve))
+  }
+})
