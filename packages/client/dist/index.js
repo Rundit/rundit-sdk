@@ -1126,6 +1126,10 @@ async function parseResponse(response) {
 }
 
 function createRequester(options) {
+  const mcpDelegation = options.mcpDelegation
+  if (mcpDelegation && Object.keys(options.headers || {}).some(name => ['authorization', 'x-api-key', 'x-rundit-mcp-delegation'].includes(name.toLowerCase()))) {
+    throw new Error('Delegation authentication cannot be combined with custom credential headers')
+  }
   const fetchImplementation = resolveFetch(options.fetch)
   const baseUrl = normalizeBaseUrl(options.baseUrl || defaultBaseUrl)
   const shouldBypassNgrokBrowserWarning = shouldSendNgrokBypassHeader(baseUrl)
@@ -1133,7 +1137,7 @@ function createRequester(options) {
     Accept: 'application/json',
     ...(shouldBypassNgrokBrowserWarning ? { 'ngrok-skip-browser-warning': '69420' } : {}),
     ...options.headers,
-    "X-API-Key": options.apiKey,
+    ...(mcpDelegation ? { 'X-Rundit-Mcp-Delegation': mcpDelegation } : { 'X-API-Key': options.apiKey }),
   }
 
   return async ({ method, path, pathParams, query, body, signal }) => {
@@ -1143,6 +1147,7 @@ function createRequester(options) {
 
     const response = await fetchImplementation(url, {
       method,
+      ...(mcpDelegation ? { redirect: 'error' } : {}),
       headers: requestHeaders,
       body: hasBody ? JSON.stringify(body) : undefined,
       signal,
@@ -1161,8 +1166,47 @@ function createRequester(options) {
   }
 }
 
-function createProfilesNamespace(request) {
-  return {
+function createProfileAvatarUploader(profiles, uploadFetch) {
+  return async (id, { companyId, file, filename, filetype }, init = {}) => {
+    const isBlob = typeof Blob !== 'undefined' && file instanceof Blob
+    if (!isBlob && !(file instanceof Uint8Array)) {
+      throw new TypeError('file must be a Blob, File or Uint8Array')
+    }
+    const filesize = isBlob ? file.size : file.byteLength
+    const mimeType = filetype || (isBlob ? file.type : undefined)
+    if (!filesize || !mimeType) throw new TypeError('A non-empty image and its MIME type are required')
+    const upload = await profiles.prepareAvatarUpload(
+      id,
+      {
+        companyId,
+        filename,
+        filetype: mimeType,
+        filesize,
+      },
+      init,
+    )
+    // Storage requests must never inherit Rundit auth or custom API headers.
+    const response = await uploadFetch(upload.uploadUrl, {
+      method: upload.httpMethod,
+      headers: upload.headers,
+      body: file,
+      signal: init.signal,
+      credentials: 'omit',
+      redirect: 'error',
+    })
+    if (!response.ok) {
+      throw new RunditSdkError('Avatar byte upload failed; the previous avatar is unchanged', {
+        status: response.status,
+        body: null,
+      })
+    }
+    return profiles.completeAvatarUpload(id, { companyId, fileUuid: upload.fileUuid }, init)
+  }
+}
+
+
+function createProfilesNamespace(request, uploadFetch) {
+  const namespace = {
     getConfig: (query = {}, init = {}) => request({ method: "GET", path: "/profiles/config", pathParams: undefined, query: query, body: undefined, signal: init.signal }),
     list: (query = {}, init = {}) => request({ method: "GET", path: "/profiles", pathParams: undefined, query: query, body: undefined, signal: init.signal }),
     create: (body, init = {}) => request({ method: "POST", path: "/profiles", pathParams: undefined, query: undefined, body: body, signal: init.signal }),
@@ -1172,6 +1216,8 @@ function createProfilesNamespace(request) {
     prepareAvatarUpload: (id, body, init = {}) => request({ method: "POST", path: "/profiles/:id/avatar/uploads", pathParams: { id }, query: undefined, body: body, signal: init.signal }),
     completeAvatarUpload: (id, body, init = {}) => request({ method: "POST", path: "/profiles/:id/avatar/uploads/complete", pathParams: { id }, query: undefined, body: body, signal: init.signal }),
   }
+  namespace.uploadAvatar = createProfileAvatarUploader(namespace, uploadFetch)
+  return namespace
 }
 
 function createCompaniesNamespace(request) {
@@ -1244,14 +1290,14 @@ export function createClient(options) {
     throw new Error('options is required')
   }
 
-  if (!options.apiKey) {
-    throw new Error('options.apiKey is required')
+  if (Boolean(options.apiKey) === Boolean(options.mcpDelegation)) {
+    throw new Error('Exactly one of apiKey or mcpDelegation is required')
   }
 
   const request = createRequester(options)
 
   return {
-    profiles: createProfilesNamespace(request),
+    profiles: createProfilesNamespace(request, resolveFetch(options.fetch)),
     companies: createCompaniesNamespace(request),
     companyGroups: createCompanyGroupsNamespace(request),
     positions: createPositionsNamespace(request),

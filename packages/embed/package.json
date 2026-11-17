@@ -1,6 +1,6 @@
 {
   "name": "@rundit-sdk/embed",
-  "version": "0.3.7",
+  "version": "0.3.8",
   "description": "Public Rundit embed SDK for iframe and embedded module consumers.",
   "repository": {
     "type": "git",

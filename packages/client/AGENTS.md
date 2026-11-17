@@ -199,3 +199,11 @@ console.log(routeManifest)
   - Call: `client.companyReports.getOne(123)`
   - Returns: `CompanyReportsGetOneResponse`
   - Params: path: id (number)
+
+## Profile avatar uploads
+
+Use `client.profiles.uploadAvatar(id, { companyId, file, filename, filetype })` with a browser File/Blob or Uint8Array (including Node Buffer). MIME type is required for bytes and otherwise defaults to the Blob type. Supports non-animated JPEG, PNG and WebP, up to 5 MiB and 16 megapixels. Create the profile first.
+
+The helper prepares an upload, sends the exact raw bytes directly to storage without Rundit API credentials, then completes and returns the updated profile. It accepts RequestOptions.signal. A failed upload does not replace the current avatar.
+
+For clients that control their own transfer, use `prepareAvatarUpload`, PUT the raw bytes to `uploadUrl` with the returned headers, then call `completeAvatarUpload`. Do not use base64, JSON or multipart for the PUT. Upload URLs expire and allow one write; obtain a fresh URL after expiration. Retrying completion for the currently attached file is safe. Remove an avatar with `update(id, { companyId, avatarImageFileUuid: null })`. Browser integrations also require the storage bucket CORS configuration to allow their origin, PUT, Content-Type and If-None-Match.

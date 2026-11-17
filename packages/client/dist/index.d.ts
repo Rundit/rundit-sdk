@@ -15,11 +15,20 @@ export declare class RunditSdkError extends Error {
   constructor(message: string, details: RunditSdkErrorDetails)
 }
 
-export interface CreateClientOptions {
+export type CreateClientOptions = {
   baseUrl?: string
-  apiKey: string
+
   fetch?: typeof fetch
   headers?: Record<string, string>
+} & ({ apiKey: string; mcpDelegation?: never } | { apiKey?: never; /** Internal MCP-to-SDK token, not an OAuth access token. */ mcpDelegation: string })
+
+export interface ProfileAvatarUploadInput {
+  companyId: number
+  /** Raw bytes or a browser File/Blob. Bytes never pass through JSON. */
+  file: Blob | Uint8Array
+  filename: string
+  /** Required for bytes; defaults to the MIME type of a Blob/File. */
+  filetype?: 'image/jpeg' | 'image/png' | 'image/webp'
 }
 
 export interface SdkProfileOptionDto {
@@ -1630,6 +1639,8 @@ export interface ProfilesNamespace {
    * Returns: ProfilesCompleteAvatarUploadResponse
    */
   completeAvatarUpload(id: string, body: ProfilesCompleteAvatarUploadBody, init?: RequestOptions): Promise<ProfilesCompleteAvatarUploadResponse>
+  /** Upload raw image bytes and attach the verified avatar. Storage receives no API credentials. */
+  uploadAvatar(id: string, input: ProfileAvatarUploadInput, init?: RequestOptions): Promise<ProfilesCompleteAvatarUploadResponse>
 }
 
 export interface CompaniesNamespace {

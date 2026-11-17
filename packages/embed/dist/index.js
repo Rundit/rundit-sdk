@@ -865,6 +865,7 @@ async function parseResponse(response) {
 }
 
 function createRequester(options) {
+  
   const fetchImplementation = resolveFetch(options.fetch)
   const baseUrl = normalizeBaseUrl(options.baseUrl || defaultBaseUrl)
   const shouldBypassNgrokBrowserWarning = shouldSendNgrokBypassHeader(baseUrl)
@@ -882,6 +883,7 @@ function createRequester(options) {
 
     const response = await fetchImplementation(url, {
       method,
+      
       headers: requestHeaders,
       body: hasBody ? JSON.stringify(body) : undefined,
       signal,
@@ -899,6 +901,8 @@ function createRequester(options) {
     return responseBody
   }
 }
+
+
 
 function createProfilesNamespace(request) {
   return {
